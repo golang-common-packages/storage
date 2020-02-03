@@ -80,9 +80,9 @@ func (m *MongoClient) GetALL(databaseName, collectionName, lastID, pageSize stri
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
-	//if collectionName == "" && lastID == "" && pageSize == "" {
-	//	return nil, errors.New("collectionName, lastID and pageSize must not empty")
-	//}
+	if databaseName == "" && collectionName == "" && lastID == "" && pageSize == "" {
+		return nil, errors.New("databaseName, collectionName, lastID and pageSize must not empty")
+	}
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
 		filter := bson.M{}
@@ -137,8 +137,20 @@ func (m *MongoClient) GetByField(databaseName, collectionName, field, value stri
 	defer session.EndSession(ctx)
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		filter := bson.M{
-			field: value,
+		filter := bson.M{}
+		if field == "_id" {
+			id, err := primitive.ObjectIDFromHex(value)
+			if err != nil {
+				fmt.Printf("%d can not convert to ObjectID", id)
+			}
+
+			filter = bson.M{
+				field: id,
+			}
+		} else {
+			filter = bson.M{
+				field: value,
+			}
 		}
 
 		collection := m.Client.Database(databaseName).Collection(collectionName)
