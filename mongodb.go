@@ -14,17 +14,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// MongoClient manage all mongodb action
+// MongoClient manage all mongo API
 type MongoClient struct {
 	Client *mongo.Client
 	Config *MongoDB
 }
 
-// NewMongoDB function return a new mongo client based on singleton pattern
+// NewMongoDB function return a new mongo client
 func NewMongoDB(config *MongoDB) IDatabase {
 	currentSession := &MongoClient{nil, nil}
 
-	// Setup client options
+	// Init Client options base on URI
 	clientOptions := options.Client().ApplyURI(getConnectionURI(config))
 
 	// Establish MongoDB connection
@@ -75,7 +75,7 @@ func (m *MongoClient) createSession() (session mongo.Session) {
 	return session
 }
 
-// GetALL ...
+// GetALL from collection with pagination
 func (m *MongoClient) GetALL(databaseName, collectionName, lastID, pageSize string, dataModel reflect.Type) (results interface{}, err error) {
 	session := m.createSession()
 	defer session.EndSession(ctx)
@@ -131,7 +131,7 @@ func (m *MongoClient) GetALL(databaseName, collectionName, lastID, pageSize stri
 	return results, nil
 }
 
-// GetByField ...
+// GetByField base on field and value
 func (m *MongoClient) GetByField(databaseName, collectionName, field, value string, dataModel reflect.Type) (result interface{}, err error) {
 	session := m.createSession()
 	defer session.EndSession(ctx)
@@ -174,7 +174,7 @@ func (m *MongoClient) GetByField(databaseName, collectionName, field, value stri
 	return result, nil
 }
 
-// Create ...
+// Create new record base on model
 func (m *MongoClient) Create(databaseName, collectionName string, dataModel interface{}) (result interface{}, err error) {
 	session := m.createSession()
 	defer session.EndSession(ctx)
@@ -195,7 +195,7 @@ func (m *MongoClient) Create(databaseName, collectionName string, dataModel inte
 	return result, nil
 }
 
-// Update ...
+// Update record with new value base on _id and model
 func (m *MongoClient) Update(databaseName, collectionName string, ID, dataModel interface{}) (result interface{}, err error) {
 	session := m.createSession()
 	defer session.EndSession(ctx)
@@ -205,7 +205,7 @@ func (m *MongoClient) Update(databaseName, collectionName string, ID, dataModel 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
 		id, ok := ID.(primitive.ObjectID)
 		if !ok {
-			return errors.New("can't convert userID type interface to primitive.ObjectID at DeleteUser function")
+			return errors.New("can't convert userID type interface to primitive.ObjectID at Update method")
 		}
 		filter := bson.M{
 			"_id": id,
@@ -226,7 +226,7 @@ func (m *MongoClient) Update(databaseName, collectionName string, ID, dataModel 
 	return result, nil
 }
 
-// Delete ...
+// Delete record base on _id
 func (m *MongoClient) Delete(databaseName, collectionName string, ID interface{}) (result interface{}, err error) {
 	session := m.createSession()
 	defer session.EndSession(ctx)
@@ -234,7 +234,7 @@ func (m *MongoClient) Delete(databaseName, collectionName string, ID interface{}
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
 		id, ok := ID.(primitive.ObjectID)
 		if !ok {
-			return errors.New("can't convert userID type interface to primitive.ObjectID at DeleteUser function")
+			return errors.New("can't convert userID type interface to primitive.ObjectID at Delete method")
 		}
 		filter := bson.M{
 			"_id": id,
