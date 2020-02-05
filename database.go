@@ -11,6 +11,7 @@ type IDatabase interface {
 	Create(databaseName, collectionName string, dataModel interface{}) (result interface{}, err error)
 	Update(databaseName, collectionName string, ID, dataModel interface{}) (result interface{}, err error)
 	Delete(databaseName, collectionName string, ID interface{}) (result interface{}, err error)
+	MatchAndLookup(databaseName, collectionForMatch, fieldForMatch, valueForMatch, collectionForLookup, fieldForLookup, foreignField string, dataModel reflect.Type) (results interface{}, err error)
 }
 
 var ctx = context.Background()

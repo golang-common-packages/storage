@@ -167,7 +167,7 @@ func (m *MongoClient) GetByField(databaseName, collectionName, field, value stri
 
 		return nil
 	}); err != nil {
-		log.Println("Error when try to use with session at GetUser method: ", err)
+		log.Println("Error when try to use with session at GetByField method: ", err)
 		return nil, err
 	}
 
@@ -219,7 +219,7 @@ func (m *MongoClient) Update(databaseName, collectionName string, ID, dataModel 
 
 		return nil
 	}); err != nil {
-		log.Println("Error when try to use with session at UpdateUser function: ", err)
+		log.Println("Error when try to use with session at Update method: ", err)
 		return nil, err
 	}
 
@@ -248,9 +248,61 @@ func (m *MongoClient) Delete(databaseName, collectionName string, ID interface{}
 
 		return nil
 	}); err != nil {
-		log.Println("Error when try to use with session at DeleteUser function: ", err)
+		log.Println("Error when try to use with session at Delete method: ", err)
 		return nil, err
 	}
 
 	return result, nil
+}
+
+// MatchAndLookup ...
+func (m *MongoClient) MatchAndLookup(databaseName, collectionForMatch, fieldForMatch, valueForMatch, collectionForLookup, fieldForLookup, foreignField string, dataModel reflect.Type) (results interface{}, err error) {
+	session := m.createSession()
+	defer session.EndSession(ctx)
+
+	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
+		matchCondition := bson.M{}
+		if fieldForMatch == "_id" {
+			id, err := primitive.ObjectIDFromHex(valueForMatch)
+			if err != nil {
+				fmt.Printf("%d can not convert to ObjectID", id)
+			}
+
+			matchCondition = bson.M{fieldForMatch: id}
+		} else {
+			matchCondition = bson.M{fieldForMatch: valueForMatch}
+		}
+
+		pipeline := []bson.M{
+			{"$match": matchCondition},
+			{"$lookup": bson.M{
+				"from":         collectionForLookup,
+				"localField":   fieldForLookup,
+				"foreignField": foreignField,
+				"as":           collectionForLookup,
+			}},
+		}
+
+		collection := m.Client.Database(databaseName).Collection(collectionForMatch)
+		cur, err := collection.Aggregate(ctx, pipeline)
+		defer cur.Close(ctx)
+		if err != nil {
+			return err
+		}
+
+		// Decode cursor
+		dataModel := reflect.Zero(reflect.SliceOf(dataModel)).Type()
+		results = reflect.New(dataModel).Interface()
+		err = cur.All(ctx, results)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		log.Println("Error when try to use with session at MatchAndLookup method: ", err)
+		return nil, err
+	}
+
+	return results, nil
 }
