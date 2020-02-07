@@ -80,48 +80,44 @@ func (m *MongoClient) GetALL(databaseName, collectionName, lastID, pageSize stri
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
-	if databaseName == "" && collectionName == "" && lastID == "" && pageSize == "" {
-		return nil, errors.New("databaseName, collectionName, lastID and pageSize must not empty")
-	}
-
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		filter := bson.M{}
+		var f interface{}
 		if lastID != "" {
-			id, err := primitive.ObjectIDFromHex(lastID)
+			f, err = filterGenerator(Match{"_id", "$gt", lastID})
 			if err != nil {
-				fmt.Printf("%d can not convert to ObjectID", id)
-			}
-
-			filter = bson.M{
-				"_id": bson.M{"$gt": id},
+				return err
 			}
 		}
-
-		// Convert pageSize from string to int64
-		limit, err := strconv.ParseInt(pageSize, 10, 64)
-		if err != nil {
-			fmt.Printf("%d can not convert to int64", limit)
-		}
-
-		findOptions := options.Find()
-		findOptions.SetLimit(limit)
-		findOptions.SetSort(bson.D{primitive.E{Key: "_id", Value: 1}})
-
-		collection := m.Client.Database(databaseName).Collection(collectionName)
-		cur, err := collection.Find(ctx, filter, findOptions)
-		defer cur.Close(ctx)
+		f, err = filterGenerator(Match{})
 		if err != nil {
 			return err
 		}
 
-		// Decode cursor
-		dataModel := reflect.Zero(reflect.SliceOf(dataModel)).Type()
-		results = reflect.New(dataModel).Interface()
-		err = cur.All(ctx, results)
-		if err != nil {
-			return err
-		}
+		if filter, ok := f.(bson.M); ok {
+			limit, err := strconv.ParseInt(pageSize, 10, 64)
+			if err != nil {
+				return err
+			}
 
+			findOptions := options.Find()
+			findOptions.SetLimit(limit)
+			findOptions.SetSort(bson.D{primitive.E{Key: "_id", Value: 1}})
+
+			collection := m.Client.Database(databaseName).Collection(collectionName)
+			cur, err := collection.Find(ctx, filter, findOptions)
+			defer cur.Close(ctx)
+			if err != nil {
+				return err
+			}
+
+			// Decode cursor
+			dataModel := reflect.Zero(reflect.SliceOf(dataModel)).Type()
+			results = reflect.New(dataModel).Interface()
+			err = cur.All(ctx, results)
+			if err != nil {
+				return err
+			}
+		}
 		return nil
 	}); err != nil {
 		log.Println("Error when try to use with session at GetALL method: ", err)
@@ -137,32 +133,23 @@ func (m *MongoClient) GetByField(databaseName, collectionName, field, value stri
 	defer session.EndSession(ctx)
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		filter := bson.M{}
-		if field == "_id" {
-			id, err := primitive.ObjectIDFromHex(value)
-			if err != nil {
-				fmt.Printf("%d can not convert to ObjectID", id)
-			}
-
-			filter = bson.M{
-				field: id,
-			}
-		} else {
-			filter = bson.M{
-				field: value,
-			}
-		}
-
-		collection := m.Client.Database(databaseName).Collection(collectionName)
-		SR := collection.FindOne(ctx, filter)
-		if SR.Err() != nil {
-			return SR.Err()
-		}
-
-		result = reflect.New(dataModel).Interface()
-		err = SR.Decode(result)
-		if err == nil {
+		f, err := filterGenerator(Match{field, "$eq", value})
+		if err != nil {
 			return err
+		}
+
+		if filter, ok := f.(bson.M); ok {
+			collection := m.Client.Database(databaseName).Collection(collectionName)
+			SR := collection.FindOne(ctx, filter)
+			if SR.Err() != nil {
+				return SR.Err()
+			}
+
+			result = reflect.New(dataModel).Interface()
+			err = SR.Decode(result)
+			if err == nil {
+				return err
+			}
 		}
 
 		return nil
@@ -196,21 +183,18 @@ func (m *MongoClient) Create(databaseName, collectionName string, dataModel inte
 }
 
 // Update record with new value base on _id and model
-func (m *MongoClient) Update(databaseName, collectionName string, ID, dataModel interface{}) (result interface{}, err error) {
+func (m *MongoClient) Update(databaseName, collectionName, ID string, dataModel interface{}) (result interface{}, err error) {
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
 	collection := m.Client.Database(databaseName).Collection(collectionName)
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		id, ok := ID.(primitive.ObjectID)
-		if !ok {
-			return errors.New("can't convert userID type interface to primitive.ObjectID at Update method")
-		}
-		filter := bson.M{
-			"_id": id,
-		}
 		update := bson.M{"$set": dataModel}
+		filter, err := filterGenerator(Match{"_id", "$eq", ID})
+		if err != nil {
+			return nil
+		}
 
 		result, err = collection.UpdateOne(ctx, filter, update)
 		if err != nil {
@@ -227,23 +211,22 @@ func (m *MongoClient) Update(databaseName, collectionName string, ID, dataModel 
 }
 
 // Delete record base on _id
-func (m *MongoClient) Delete(databaseName, collectionName string, ID interface{}) (result interface{}, err error) {
+func (m *MongoClient) Delete(databaseName, collectionName, ID string) (result interface{}, err error) {
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		id, ok := ID.(primitive.ObjectID)
-		if !ok {
-			return errors.New("can't convert userID type interface to primitive.ObjectID at Delete method")
-		}
-		filter := bson.M{
-			"_id": id,
-		}
-
-		collection := m.Client.Database(databaseName).Collection(collectionName)
-		result, err = collection.DeleteOne(ctx, filter)
+		f, err := filterGenerator(Match{"_id", "$eq", ID})
 		if err != nil {
 			return err
+		}
+
+		if filter, ok := f.(bson.M); ok {
+			collection := m.Client.Database(databaseName).Collection(collectionName)
+			result, err = collection.DeleteOne(ctx, filter)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -256,46 +239,31 @@ func (m *MongoClient) Delete(databaseName, collectionName string, ID interface{}
 }
 
 // MatchAndLookup ...
-func (m *MongoClient) MatchAndLookup(databaseName, collectionForMatch, fieldForMatch, valueForMatch, collectionForLookup, fieldForLookup, foreignField string, dataModel reflect.Type) (results interface{}, err error) {
+func (m *MongoClient) MatchAndLookup(databaseName, collectionForMatch string, model MatchLookup, dataModel reflect.Type) (results interface{}, err error) {
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		matchCondition := bson.M{}
-		if fieldForMatch == "_id" {
-			id, err := primitive.ObjectIDFromHex(valueForMatch)
+		p, err := filterGenerator(model)
+		if err != nil {
+			return err
+		}
+
+		if pipeline, ok := p.([]bson.M); ok {
+			collection := m.Client.Database(databaseName).Collection(collectionForMatch)
+			cur, err := collection.Aggregate(ctx, pipeline)
+			defer cur.Close(ctx)
 			if err != nil {
-				fmt.Printf("%d can not convert to ObjectID", id)
+				return err
 			}
 
-			matchCondition = bson.M{fieldForMatch: id}
-		} else {
-			matchCondition = bson.M{fieldForMatch: valueForMatch}
-		}
-
-		pipeline := []bson.M{
-			{"$match": matchCondition},
-			{"$lookup": bson.M{
-				"from":         collectionForLookup,
-				"localField":   fieldForLookup,
-				"foreignField": foreignField,
-				"as":           collectionForLookup,
-			}},
-		}
-
-		collection := m.Client.Database(databaseName).Collection(collectionForMatch)
-		cur, err := collection.Aggregate(ctx, pipeline)
-		defer cur.Close(ctx)
-		if err != nil {
-			return err
-		}
-
-		// Decode cursor
-		dataModel := reflect.Zero(reflect.SliceOf(dataModel)).Type()
-		results = reflect.New(dataModel).Interface()
-		err = cur.All(ctx, results)
-		if err != nil {
-			return err
+			// Decode cursor
+			dataModel := reflect.Zero(reflect.SliceOf(dataModel)).Type()
+			results = reflect.New(dataModel).Interface()
+			err = cur.All(ctx, results)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
@@ -305,4 +273,78 @@ func (m *MongoClient) MatchAndLookup(databaseName, collectionForMatch, fieldForM
 	}
 
 	return results, nil
+}
+
+func filterGenerator(rawModel interface{}) (interface{}, error) {
+	// Generate MatchLookup bson.M
+	if model, ok := rawModel.(MatchLookup); ok {
+		value := reflect.Indirect(reflect.ValueOf(model))
+		fields := value.MapKeys()
+		var pipeline []bson.M
+		for _, field := range fields {
+			f := field.Interface()
+
+			// Generate lookup pipeline type [] Match
+			if matchs, ok := f.([]Match); ok {
+				for _, match := range matchs {
+					var filter bson.M
+					if match.Field == "_id" {
+						filter["$match"] = bson.M{
+							match.Field: primitive.ObjectIDFromHex(match.Value),
+						}
+					} else {
+						filter["$match"] = bson.M{
+							match.Field: match.Value,
+						}
+					}
+					pipeline = append(pipeline, filter)
+				}
+			}
+
+			// Generate lookup pipeline type [] Lookup
+			if lookups, ok := f.([]Lookup); ok {
+				for _, lookup := range lookups {
+					var filter bson.M
+					filter["$lookup"] = bson.M{
+						"from":         lookup.From,
+						"localField":   lookup.LocalField,
+						"foreignField": lookup.ForeignField,
+						"as":           lookup.As,
+					}
+					pipeline = append(pipeline, filter)
+				}
+			}
+		}
+		return pipeline, nil
+	}
+
+	// Generate Match bson.M
+	if match, ok := rawModel.(Match); ok {
+		emptyMatch := Match{}
+		Match := bson.M{}
+		if match == emptyMatch {
+			return Match, nil
+		} else {
+			if match.Field == "_id" {
+				id, err := primitive.ObjectIDFromHex(match.Value)
+				if err != nil {
+					return nil, err
+				}
+
+				Match = bson.M{
+					match.Field: id,
+				}
+
+				return Match, nil
+			} else {
+				Match = bson.M{
+					match.Field: match.Value,
+				}
+
+				return Match, nil
+			}
+		}
+	}
+
+	return nil, errors.New("can not generate bson.M based on this model")
 }
