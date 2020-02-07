@@ -118,7 +118,8 @@ func (m *MongoClient) GetALL(databaseName, collectionName, lastID, pageSize stri
 				return err
 			}
 		}
-		return nil
+
+		return errors.New("something wrong with bson filter at GetALL method")
 	}); err != nil {
 		log.Println("Error when try to use with session at GetALL method: ", err)
 		return nil, err
@@ -152,7 +153,7 @@ func (m *MongoClient) GetByField(databaseName, collectionName, field, value stri
 			}
 		}
 
-		return nil
+		return errors.New("something wrong with bson filter at GetByField method")
 	}); err != nil {
 		log.Println("Error when try to use with session at GetByField method: ", err)
 		return nil, err
@@ -191,17 +192,19 @@ func (m *MongoClient) Update(databaseName, collectionName, ID string, dataModel 
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
 		update := bson.M{"$set": dataModel}
-		filter, err := filterGenerator(Match{"_id", "$eq", ID})
-		if err != nil {
-			return nil
-		}
-
-		result, err = collection.UpdateOne(ctx, filter, update)
+		f, err := filterGenerator(Match{"_id", "$eq", ID})
 		if err != nil {
 			return err
 		}
 
-		return nil
+		if filter, ok := f.(bson.M); ok {
+			result, err = collection.UpdateOne(ctx, filter, update)
+			if err != nil {
+				return err
+			}
+		}
+
+		return errors.New("something wrong with bson filter at Update method")
 	}); err != nil {
 		log.Println("Error when try to use with session at Update method: ", err)
 		return nil, err
@@ -229,7 +232,7 @@ func (m *MongoClient) Delete(databaseName, collectionName, ID string) (result in
 			}
 		}
 
-		return nil
+		return errors.New("something wrong with bson filter at Delete method")
 	}); err != nil {
 		log.Println("Error when try to use with session at Delete method: ", err)
 		return nil, err
@@ -266,7 +269,7 @@ func (m *MongoClient) MatchAndLookup(databaseName, collectionName string, model 
 			}
 		}
 
-		return nil
+		return errors.New("something wrong with bson filter at MatchAndLookup method")
 	}); err != nil {
 		log.Println("Error when try to use with session at MatchAndLookup method: ", err)
 		return nil, err
@@ -276,7 +279,7 @@ func (m *MongoClient) MatchAndLookup(databaseName, collectionName string, model 
 }
 
 func filterGenerator(rawModel interface{}) (interface{}, error) {
-	// Generate MatchLookup bson.M
+	// Generate MatchLookup pipeline []bson.M
 	if model, ok := rawModel.(MatchLookup); ok {
 		value := reflect.Indirect(reflect.ValueOf(model))
 		fields := value.MapKeys()
@@ -284,7 +287,7 @@ func filterGenerator(rawModel interface{}) (interface{}, error) {
 		for _, field := range fields {
 			f := field.Interface()
 
-			// Generate lookup pipeline type [] Match
+			// Generate match pipeline type [] Match
 			if matchs, ok := f.([]Match); ok {
 				for _, match := range matchs {
 					var filter bson.M
@@ -323,7 +326,7 @@ func filterGenerator(rawModel interface{}) (interface{}, error) {
 		return pipeline, nil
 	}
 
-	// Generate Match bson.M
+	// Generate Match type bson.M
 	if match, ok := rawModel.(Match); ok {
 		emptyMatch := Match{}
 		Match := bson.M{}
