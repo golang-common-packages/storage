@@ -239,7 +239,7 @@ func (m *MongoClient) Delete(databaseName, collectionName, ID string) (result in
 }
 
 // MatchAndLookup ...
-func (m *MongoClient) MatchAndLookup(databaseName, collectionForMatch string, model MatchLookup, dataModel reflect.Type) (results interface{}, err error) {
+func (m *MongoClient) MatchAndLookup(databaseName, collectionName string, model MatchLookup, dataModel reflect.Type) (results interface{}, err error) {
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
@@ -250,7 +250,7 @@ func (m *MongoClient) MatchAndLookup(databaseName, collectionForMatch string, mo
 		}
 
 		if pipeline, ok := p.([]bson.M); ok {
-			collection := m.Client.Database(databaseName).Collection(collectionForMatch)
+			collection := m.Client.Database(databaseName).Collection(collectionName)
 			cur, err := collection.Aggregate(ctx, pipeline)
 			defer cur.Close(ctx)
 			if err != nil {

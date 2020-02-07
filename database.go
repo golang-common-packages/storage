@@ -9,9 +9,9 @@ type IDatabase interface {
 	GetALL(databaseName, collectionName, lastID, pageSize string, dataModel reflect.Type) (results interface{}, err error)
 	GetByField(databaseName, collectionName, field, value string, dataModel reflect.Type) (interface{}, error)
 	Create(databaseName, collectionName string, dataModel interface{}) (result interface{}, err error)
-	Update(databaseName, collectionName string, ID, dataModel interface{}) (result interface{}, err error)
-	Delete(databaseName, collectionName string, ID interface{}) (result interface{}, err error)
-	MatchAndLookup(databaseName, collectionForMatch, fieldForMatch, valueForMatch, collectionForLookup, fieldForLookup, foreignField string, dataModel reflect.Type) (results interface{}, err error)
+	Update(databaseName, collectionName, ID string, dataModel interface{}) (result interface{}, err error)
+	Delete(databaseName, collectionName, ID string) (result interface{}, err error)
+	MatchAndLookup(databaseName, collectionName string, model MatchLookup, dataModel reflect.Type) (results interface{}, err error)
 }
 
 var ctx = context.Background()
