@@ -289,8 +289,13 @@ func filterGenerator(rawModel interface{}) (interface{}, error) {
 				for _, match := range matchs {
 					var filter bson.M
 					if match.Field == "_id" {
+						id, err := primitive.ObjectIDFromHex(match.Value)
+						if err != nil {
+							return nil, err
+						}
+
 						filter["$match"] = bson.M{
-							match.Field: primitive.ObjectIDFromHex(match.Value),
+							match.Field: id,
 						}
 					} else {
 						filter["$match"] = bson.M{
@@ -346,5 +351,5 @@ func filterGenerator(rawModel interface{}) (interface{}, error) {
 		}
 	}
 
-	return nil, errors.New("can not generate bson.M based on this model")
+	return nil, errors.New("can not generate bson based on this model")
 }
