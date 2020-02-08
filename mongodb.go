@@ -83,12 +83,12 @@ func (m *MongoClient) GetALL(databaseName, collectionName, lastID, pageSize stri
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
 		var f interface{}
 		if lastID != "" {
-			f, err = filterGenerator(Match{"_id", GreaterThan, lastID})
+			f, err = bsonGenerator(Match{"_id", GreaterThan, lastID})
 			if err != nil {
 				return err
 			}
 		}
-		f, err = filterGenerator(Match{})
+		f, err = bsonGenerator(Match{})
 		if err != nil {
 			return err
 		}
@@ -134,7 +134,7 @@ func (m *MongoClient) GetByField(databaseName, collectionName, field, value stri
 	defer session.EndSession(ctx)
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		f, err := filterGenerator(Match{field, Equal, value})
+		f, err := bsonGenerator(Match{field, Equal, value})
 		if err != nil {
 			return err
 		}
@@ -189,12 +189,12 @@ func (m *MongoClient) Update(databaseName, collectionName, ID string, dataModel 
 	defer session.EndSession(ctx)
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		ud, err := filterGenerator(Set{Replaces, dataModel})
+		ud, err := bsonGenerator(Set{Replaces, dataModel})
 		if err != nil {
 			return err
 		}
 
-		f, err := filterGenerator(Match{"_id", Equal, ID})
+		f, err := bsonGenerator(Match{"_id", Equal, ID})
 		if err != nil {
 			return err
 		}
@@ -230,7 +230,7 @@ func (m *MongoClient) Delete(databaseName, collectionName, ID string) (result in
 	defer session.EndSession(ctx)
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		f, err := filterGenerator(Match{"_id", Equal, ID})
+		f, err := bsonGenerator(Match{"_id", Equal, ID})
 		if err != nil {
 			return err
 		}
@@ -258,7 +258,7 @@ func (m *MongoClient) MatchAndLookup(databaseName, collectionName string, model 
 	defer session.EndSession(ctx)
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		p, err := filterGenerator(model)
+		p, err := bsonGenerator(model)
 		if err != nil {
 			return err
 		}
@@ -289,7 +289,8 @@ func (m *MongoClient) MatchAndLookup(databaseName, collectionName string, model 
 	return results, nil
 }
 
-func filterGenerator(rawModel interface{}) (interface{}, error) {
+// bsonGenerator return bson format based on model
+func bsonGenerator(rawModel interface{}) (interface{}, error) {
 	// Generate MatchLookup pipeline []bson.M
 	if model, ok := rawModel.(MatchLookup); ok {
 		value := reflect.Indirect(reflect.ValueOf(model))
@@ -375,5 +376,5 @@ func filterGenerator(rawModel interface{}) (interface{}, error) {
 		return setOperator, nil
 	}
 
-	return nil, errors.New("can not generate bson at filterGenerator function")
+	return nil, errors.New("can not generate bson at bsonGenerator function")
 }
