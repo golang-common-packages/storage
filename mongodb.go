@@ -83,7 +83,7 @@ func (m *MongoClient) GetALL(databaseName, collectionName, lastID, pageSize stri
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
 		var f interface{}
 		if lastID != "" {
-			f, err = filterGenerator(Match{"_id", "$gt", lastID})
+			f, err = filterGenerator(Match{"_id", GreaterThan, lastID})
 			if err != nil {
 				return err
 			}
@@ -134,7 +134,7 @@ func (m *MongoClient) GetByField(databaseName, collectionName, field, value stri
 	defer session.EndSession(ctx)
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		f, err := filterGenerator(Match{field, "$eq", value})
+		f, err := filterGenerator(Match{field, Equal, value})
 		if err != nil {
 			return err
 		}
@@ -188,23 +188,34 @@ func (m *MongoClient) Update(databaseName, collectionName, ID string, dataModel 
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
-	collection := m.Client.Database(databaseName).Collection(collectionName)
-
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		update := bson.M{"$set": dataModel}
-		f, err := filterGenerator(Match{"_id", "$eq", ID})
+		ud, err := filterGenerator(Set{Replaces, dataModel})
 		if err != nil {
 			return err
 		}
 
-		if filter, ok := f.(bson.M); ok {
-			result, err = collection.UpdateOne(ctx, filter, update)
-			if err != nil {
-				return err
-			}
+		f, err := filterGenerator(Match{"_id", Equal, ID})
+		if err != nil {
+			return err
 		}
 
-		return errors.New("something wrong with bson filter at Update method")
+		update, ok := ud.(bson.M)
+		if !ok {
+			return errors.New("something wrong with bson update at Update method")
+		}
+
+		filter, ok := f.(bson.M)
+		if !ok {
+			return errors.New("something wrong with bson filter at Update method")
+		}
+
+		collection := m.Client.Database(databaseName).Collection(collectionName)
+		result, err = collection.UpdateOne(ctx, filter, update)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}); err != nil {
 		log.Println("Error when try to use with session at Update method: ", err)
 		return nil, err
@@ -219,7 +230,7 @@ func (m *MongoClient) Delete(databaseName, collectionName, ID string) (result in
 	defer session.EndSession(ctx)
 
 	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-		f, err := filterGenerator(Match{"_id", "$eq", ID})
+		f, err := filterGenerator(Match{"_id", Equal, ID})
 		if err != nil {
 			return err
 		}
@@ -298,11 +309,11 @@ func filterGenerator(rawModel interface{}) (interface{}, error) {
 						}
 
 						filter["$match"] = bson.M{
-							match.Field: bson.M{match.Operator: id},
+							match.Field: bson.M{string(match.Operator): id},
 						}
 					} else {
 						filter["$match"] = bson.M{
-							match.Field: bson.M{match.Operator: match.Value},
+							match.Field: bson.M{string(match.Operator): match.Value},
 						}
 					}
 					pipeline = append(pipeline, filter)
@@ -323,6 +334,7 @@ func filterGenerator(rawModel interface{}) (interface{}, error) {
 				}
 			}
 		}
+
 		return pipeline, nil
 	}
 
@@ -340,13 +352,13 @@ func filterGenerator(rawModel interface{}) (interface{}, error) {
 				}
 
 				Match = bson.M{
-					match.Field: bson.M{match.Operator: id},
+					match.Field: bson.M{string(match.Operator): id},
 				}
 
 				return Match, nil
 			} else {
 				Match = bson.M{
-					match.Field: bson.M{match.Operator: match.Value},
+					match.Field: bson.M{string(match.Operator): match.Value},
 				}
 
 				return Match, nil
@@ -354,5 +366,14 @@ func filterGenerator(rawModel interface{}) (interface{}, error) {
 		}
 	}
 
-	return nil, errors.New("can not generate bson based on this model")
+	// Generate Set type bson.M
+	if set, ok := rawModel.(Set); ok {
+		setOperator := bson.M{
+			string(set.Operator): set.Data,
+		}
+
+		return setOperator, nil
+	}
+
+	return nil, errors.New("can not generate bson at filterGenerator function")
 }
