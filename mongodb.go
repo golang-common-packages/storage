@@ -298,11 +298,11 @@ func filterGenerator(rawModel interface{}) (interface{}, error) {
 						}
 
 						filter["$match"] = bson.M{
-							match.Field: id,
+							match.Field: bson.M{match.Operator: id},
 						}
 					} else {
 						filter["$match"] = bson.M{
-							match.Field: match.Value,
+							match.Field: bson.M{match.Operator: match.Value},
 						}
 					}
 					pipeline = append(pipeline, filter)
@@ -340,13 +340,13 @@ func filterGenerator(rawModel interface{}) (interface{}, error) {
 				}
 
 				Match = bson.M{
-					match.Field: id,
+					match.Field: bson.M{match.Operator: id},
 				}
 
 				return Match, nil
 			} else {
 				Match = bson.M{
-					match.Field: match.Value,
+					match.Field: bson.M{match.Operator: match.Value},
 				}
 
 				return Match, nil
