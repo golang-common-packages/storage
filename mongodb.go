@@ -119,9 +119,9 @@ func (m *MongoClient) GetALL(databaseName, collectionName, lastID, pageSize stri
 			}
 		}
 
-		return errors.New("something wrong with bson filter at GetALL method")
+		return nil
 	}); err != nil {
-		log.Println("Error when try to use with session at GetALL method: ", err)
+		log.Println("Error in GetALL method: ", err)
 		return nil, err
 	}
 
@@ -148,14 +148,14 @@ func (m *MongoClient) GetByField(databaseName, collectionName, field, value stri
 
 			result = reflect.New(dataModel).Interface()
 			err = SR.Decode(result)
-			if err == nil {
+			if err != nil {
 				return err
 			}
 		}
 
-		return errors.New("something wrong with bson filter at GetByField method")
+		return nil
 	}); err != nil {
-		log.Println("Error when try to use with session at GetByField method: ", err)
+		log.Println("Error in GetByField method: ", err)
 		return nil, err
 	}
 
@@ -176,7 +176,7 @@ func (m *MongoClient) Create(databaseName, collectionName string, dataModel inte
 
 		return nil
 	}); err != nil {
-		log.Println("Error when try to use with session at Create method: ", err)
+		log.Println("Error in Create method: ", err)
 		return nil, err
 	}
 
@@ -217,7 +217,7 @@ func (m *MongoClient) Update(databaseName, collectionName, ID string, dataModel 
 
 		return nil
 	}); err != nil {
-		log.Println("Error when try to use with session at Update method: ", err)
+		log.Println("Error in Update method: ", err)
 		return nil, err
 	}
 
@@ -243,9 +243,9 @@ func (m *MongoClient) Delete(databaseName, collectionName, ID string) (result in
 			}
 		}
 
-		return errors.New("something wrong with bson filter at Delete method")
+		return nil
 	}); err != nil {
-		log.Println("Error when try to use with session at Delete method: ", err)
+		log.Println("Error in Delete method: ", err)
 		return nil, err
 	}
 
@@ -280,9 +280,9 @@ func (m *MongoClient) MatchAndLookup(databaseName, collectionName string, model 
 			}
 		}
 
-		return errors.New("something wrong with bson filter at MatchAndLookup method")
+		return nil
 	}); err != nil {
-		log.Println("Error when try to use with session at MatchAndLookup method: ", err)
+		log.Println("Error in MatchAndLookup method: ", err)
 		return nil, err
 	}
 
@@ -300,8 +300,8 @@ func bsonGenerator(rawModel interface{}) (interface{}, error) {
 			f := field.Interface()
 
 			// Generate match pipeline type [] Match
-			if matchs, ok := f.([]Match); ok {
-				for _, match := range matchs {
+			if matches, ok := f.([]Match); ok {
+				for _, match := range matches {
 					var filter bson.M
 					if match.Field == "_id" {
 						id, err := primitive.ObjectIDFromHex(match.Value)
@@ -376,5 +376,5 @@ func bsonGenerator(rawModel interface{}) (interface{}, error) {
 		return setOperator, nil
 	}
 
-	return nil, errors.New("can not generate bson at bsonGenerator function")
+	return nil, errors.New("error in bsonGenerator function")
 }
