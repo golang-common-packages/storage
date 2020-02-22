@@ -1,4 +1,4 @@
-package database
+package nosql
 
 import (
 	"errors"
@@ -21,7 +21,7 @@ type MongoClient struct {
 }
 
 // NewMongoDB function return a new mongo client
-func NewMongoDB(config *MongoDB) IDatabase {
+func NewMongoDB(config *MongoDB) INoSQL {
 	currentSession := &MongoClient{nil, nil}
 
 	// Init Client options base on URI
@@ -76,7 +76,13 @@ func (m *MongoClient) createSession() (session mongo.Session) {
 }
 
 // GetALL from collection with pagination
-func (m *MongoClient) GetALL(databaseName, collectionName, lastID, pageSize string, dataModel reflect.Type) (results interface{}, err error) {
+func (m *MongoClient) GetALL(
+	databaseName,
+	collectionName,
+	lastID,
+	pageSize string,
+	dataModel reflect.Type) (results interface{}, err error) {
+
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
@@ -129,7 +135,13 @@ func (m *MongoClient) GetALL(databaseName, collectionName, lastID, pageSize stri
 }
 
 // GetByField base on field and value
-func (m *MongoClient) GetByField(databaseName, collectionName, field, value string, dataModel reflect.Type) (result interface{}, err error) {
+func (m *MongoClient) GetByField(
+	databaseName,
+	collectionName,
+	field,
+	value string,
+	dataModel reflect.Type) (result interface{}, err error) {
+
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
@@ -163,7 +175,11 @@ func (m *MongoClient) GetByField(databaseName, collectionName, field, value stri
 }
 
 // Create new record base on model
-func (m *MongoClient) Create(databaseName, collectionName string, dataModel interface{}) (result interface{}, err error) {
+func (m *MongoClient) Create(
+	databaseName,
+	collectionName string,
+	dataModel interface{}) (result interface{}, err error) {
+
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
@@ -184,7 +200,12 @@ func (m *MongoClient) Create(databaseName, collectionName string, dataModel inte
 }
 
 // Update record with new value base on _id and model
-func (m *MongoClient) Update(databaseName, collectionName, ID string, dataModel interface{}) (result interface{}, err error) {
+func (m *MongoClient) Update(
+	databaseName,
+	collectionName,
+	ID string,
+	dataModel interface{}) (result interface{}, err error) {
+
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
@@ -225,7 +246,11 @@ func (m *MongoClient) Update(databaseName, collectionName, ID string, dataModel 
 }
 
 // Delete record base on _id
-func (m *MongoClient) Delete(databaseName, collectionName, ID string) (result interface{}, err error) {
+func (m *MongoClient) Delete(
+	databaseName,
+	collectionName,
+	ID string) (result interface{}, err error) {
+
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
@@ -253,7 +278,12 @@ func (m *MongoClient) Delete(databaseName, collectionName, ID string) (result in
 }
 
 // MatchAndLookup ...
-func (m *MongoClient) MatchAndLookup(databaseName, collectionName string, model MatchLookup, dataModel reflect.Type) (results interface{}, err error) {
+func (m *MongoClient) MatchAndLookup(
+	databaseName,
+	collectionName string,
+	model MatchLookup,
+	dataModel reflect.Type) (results interface{}, err error) {
+
 	session := m.createSession()
 	defer session.EndSession(ctx)
 
@@ -290,7 +320,9 @@ func (m *MongoClient) MatchAndLookup(databaseName, collectionName string, model 
 }
 
 // bsonGenerator return bson format based on model
-func bsonGenerator(rawModel interface{}) (interface{}, error) {
+func bsonGenerator(
+	rawModel interface{}) (interface{}, error) {
+
 	// Generate MatchLookup pipeline []bson.M
 	if model, ok := rawModel.(MatchLookup); ok {
 		value := reflect.Indirect(reflect.ValueOf(model))

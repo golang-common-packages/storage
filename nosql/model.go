@@ -1,9 +1,9 @@
-package database
+package nosql
 
 ///// Config Model /////
 
-// Database model for database config
-type Database struct {
+// Config model for database config
+type Config struct {
 	MongoDB MongoDB `json:"mongodb"`
 }
 
