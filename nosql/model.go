@@ -1,21 +1,5 @@
 package nosql
 
-///// Config Model /////
-
-// Config model for database config
-type Config struct {
-	MongoDB MongoDB `json:"mongodb"`
-}
-
-// MongoDB model for MongoDB config
-type MongoDB struct {
-	User     string   `json:"user"`
-	Password string   `json:"password"`
-	Hosts    []string `json:"hosts"`
-	DB       string   `json:"db"`
-	Options  []string `json:"options"`
-}
-
 ///// MongoDB query model /////
 
 // MatchLookup ...

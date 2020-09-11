@@ -12,16 +12,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/golang-common-packages/database/model"
 )
 
 // MongoClient manage all mongo API
 type MongoClient struct {
 	Client *mongo.Client
-	Config *MongoDB
+	Config *model.MongoDB
 }
 
 // NewMongoDB function return a new mongo client
-func NewMongoDB(config *MongoDB) INoSQL {
+func NewMongoDB(config *model.MongoDB) INoSQL {
 	currentSession := &MongoClient{nil, nil}
 
 	// Init Client options base on URI
@@ -48,7 +50,7 @@ func NewMongoDB(config *MongoDB) INoSQL {
 }
 
 // getConnectionURL return mongo connection URI
-func getConnectionURI(config *MongoDB) (URI string) {
+func getConnectionURI(config *model.MongoDB) (URI string) {
 	host := strings.Join(config.Hosts, ",")
 	opt := strings.Join(config.Options, "?")
 	if config.User == "" && config.Password == "" {
@@ -375,28 +377,30 @@ func bsonGenerator(
 	if match, ok := rawModel.(Match); ok {
 		emptyMatch := Match{}
 		Match := bson.M{}
+
 		if match == emptyMatch {
 			return Match, nil
-		} else {
-			if match.Field == "_id" {
-				id, err := primitive.ObjectIDFromHex(match.Value)
-				if err != nil {
-					return nil, err
-				}
-
-				Match = bson.M{
-					match.Field: bson.M{string(match.Operator): id},
-				}
-
-				return Match, nil
-			} else {
-				Match = bson.M{
-					match.Field: bson.M{string(match.Operator): match.Value},
-				}
-
-				return Match, nil
-			}
 		}
+
+		if match.Field == "_id" {
+			id, err := primitive.ObjectIDFromHex(match.Value)
+			if err != nil {
+				return nil, err
+			}
+
+			Match = bson.M{
+				match.Field: bson.M{string(match.Operator): id},
+			}
+
+			return Match, nil
+		}
+
+		Match = bson.M{
+			match.Field: bson.M{string(match.Operator): match.Value},
+		}
+
+		return Match, nil
+
 	}
 
 	// Generate Set type bson.M
