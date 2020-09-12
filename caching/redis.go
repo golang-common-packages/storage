@@ -102,7 +102,7 @@ func (r *RedisClient) Append(key string, value interface{}) error {
 	}
 
 	var v string
-	json.Unmarshal(b, v)
+	json.Unmarshal(b, &v)
 
 	return r.Client.Append(key, v).Err()
 }
