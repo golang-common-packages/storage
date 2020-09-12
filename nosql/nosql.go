@@ -3,8 +3,11 @@ package nosql
 import (
 	"context"
 	"reflect"
+
+	"github.com/golang-common-packages/database/model"
 )
 
+// INoSQL interface for NoSQL factory pattern
 type INoSQL interface {
 	GetALL(
 		databaseName,
@@ -51,10 +54,10 @@ const (
 
 // New function for NoSQL factory pattern
 func New(
-	databaseType int,
-	config *Config) INoSQL {
+	databaseCompany int,
+	config *model.Config) interface{} {
 
-	switch databaseType {
+	switch databaseCompany {
 	case MONGODB:
 		return NewMongoDB(&config.MongoDB)
 	}
