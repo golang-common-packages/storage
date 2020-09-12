@@ -22,7 +22,7 @@ type BigCacheClient struct {
 // NewBigCache init new instance
 func NewBigCache(config *model.Config) ICaching {
 	currentSession := &BigCacheClient{nil}
-	client, err := bigcache.NewBigCache(config.Caching.BigCache)
+	client, err := bigcache.NewBigCache(config.BigCache)
 	if err != nil {
 		panic(err)
 	} else {

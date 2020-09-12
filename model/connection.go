@@ -6,13 +6,13 @@ import (
 	"github.com/allegro/bigcache/v2"
 )
 
-///// Connection Config Model /////
-
 // Config model for database config
 type Config struct {
-	MongoDB MongoDB `json:"mongodb"`
-	LIKE    LIKE    `json:"like"`
-	Caching Caching `json:"caching"`
+	LIKE        LIKE            `json:"like"`
+	MongoDB     MongoDB         `json:"mongodb"`
+	Redis       Redis           `json:"redis,omitempty"`
+	CustomCache CustomCache     `json:"customCache,omitempty"`
+	BigCache    bigcache.Config `json:"bigCache,omitempty"`
 }
 
 // LIKE model for SQL-LIKE connection config
@@ -31,13 +31,6 @@ type MongoDB struct {
 	Hosts    []string `json:"hosts"`
 	DB       string   `json:"db"`
 	Options  []string `json:"options"`
-}
-
-// Caching model for database caching connection config
-type Caching struct {
-	CustomCache CustomCache     `json:"customCache,omitempty"`
-	Redis       Redis           `json:"redis,omitempty"`
-	BigCache    bigcache.Config `json:"bigCache,omitempty"`
 }
 
 // Redis model for redis config

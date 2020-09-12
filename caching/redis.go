@@ -22,7 +22,7 @@ type RedisClient struct {
 // NewRedis init new instance
 func NewRedis(config *model.Config) ICaching {
 	currentSession := &RedisClient{nil}
-	client, err := currentSession.connect(config.Caching.Redis)
+	client, err := currentSession.connect(config.Redis)
 	if err != nil {
 		panic(err)
 	} else {
@@ -102,7 +102,7 @@ func (r *RedisClient) Append(key string, value interface{}) error {
 	}
 
 	var v string
-	json.Unmarshal(b, v)
+	json.Unmarshal(b, &v)
 
 	return r.Client.Append(key, v).Err()
 }

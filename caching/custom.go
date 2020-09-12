@@ -21,11 +21,11 @@ type CustomClient struct {
 
 // NewCustom init new instance
 func NewCustom(config *model.Config) ICaching {
-	currentSession := &CustomClient{linear.New(config.Caching.CustomCache.CacheSize, config.Caching.CustomCache.CleaningEnable), make(chan struct{})}
+	currentSession := &CustomClient{linear.New(config.CustomCache.CacheSize, config.CustomCache.CleaningEnable), make(chan struct{})}
 
 	// Check record expiration time and remove
 	go func() {
-		ticker := time.NewTicker(config.Caching.CustomCache.CleaningInterval)
+		ticker := time.NewTicker(config.CustomCache.CleaningInterval)
 		defer ticker.Stop()
 
 		for {
