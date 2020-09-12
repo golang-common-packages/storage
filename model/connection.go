@@ -1,6 +1,10 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/allegro/bigcache/v2"
+)
 
 ///// Connection Config Model /////
 
@@ -8,6 +12,7 @@ import "time"
 type Config struct {
 	MongoDB MongoDB `json:"mongodb"`
 	LIKE    LIKE    `json:"like"`
+	Caching Caching `json:"caching"`
 }
 
 // LIKE model for SQL-LIKE connection config
@@ -26,4 +31,26 @@ type MongoDB struct {
 	Hosts    []string `json:"hosts"`
 	DB       string   `json:"db"`
 	Options  []string `json:"options"`
+}
+
+// Caching model for database caching connection config
+type Caching struct {
+	CustomCache CustomCache     `json:"customCache,omitempty"`
+	Redis       Redis           `json:"redis,omitempty"`
+	BigCache    bigcache.Config `json:"bigCache,omitempty"`
+}
+
+// Redis model for redis config
+type Redis struct {
+	Password   string `json:"password,omitempty"`
+	Host       string `json:"host,omitempty"`
+	DB         int    `json:"db,omitempty"`
+	MaxRetries int    `json:"maxRetries,omitempty"`
+}
+
+// CustomCache config model
+type CustomCache struct {
+	CacheSize        int64         `json:"cacheSize,omitempty"` // byte
+	CleaningEnable   bool          `json:"cleaningEnable,omitempty"`
+	CleaningInterval time.Duration `json:"cleaningInterval,omitempty"` // nanosecond
 }
