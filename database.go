@@ -12,7 +12,7 @@ const (
 )
 
 // New function for database abstract factory
-func New(databaseType int) func(databaseType int, config *model.Config) interface{} {
+func New(databaseType int) func(databaseCompany int, config *model.Config) interface{} {
 	switch databaseType {
 	case SQL:
 		return sql.New

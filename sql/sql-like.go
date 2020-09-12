@@ -72,7 +72,7 @@ func (c *Client) Execute(
 		results = append(results, dataModel)
 	}
 
-	// Check for errors during rows "Close".
+	// Check for errors during rows "Close"
 	// This may be more important if multiple statements are executed
 	// in a single batch and rows were written as well as read.
 	if err := rows.Close(); err != nil {

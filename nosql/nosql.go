@@ -54,10 +54,10 @@ const (
 
 // New function for NoSQL factory pattern
 func New(
-	databaseType int,
+	databaseCompany int,
 	config *model.Config) interface{} {
 
-	switch databaseType {
+	switch databaseCompany {
 	case MONGODB:
 		return NewMongoDB(&config.MongoDB)
 	}

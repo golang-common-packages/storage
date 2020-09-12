@@ -10,7 +10,7 @@ type Config struct {
 	LIKE    LIKE    `json:"like"`
 }
 
-// LIKE model for SQL-LIKE config
+// LIKE model for SQL-LIKE connection config
 type LIKE struct {
 	DriverName            string        `json:"driverName"`
 	DataSourceName        string        `json:"dataSourceName"`
@@ -19,7 +19,7 @@ type LIKE struct {
 	MaxConnectionOpen     int           `json:"maxConnectionOpen"`
 }
 
-// MongoDB model for MongoDB config
+// MongoDB model for MongoDB connection config
 type MongoDB struct {
 	User     string   `json:"user"`
 	Password string   `json:"password"`
