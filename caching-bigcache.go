@@ -1,4 +1,4 @@
-package caching
+package database
 
 import (
 	"encoding/json"
@@ -10,17 +10,16 @@ import (
 	"github.com/allegro/bigcache/v2"
 	"github.com/labstack/echo/v4"
 
-	"github.com/golang-common-packages/database/model"
 	"github.com/golang-common-packages/hash"
 )
 
-// BigCacheClient manage all BigCache action
+// BigCacheClient manage all BigCache actions
 type BigCacheClient struct {
 	Client *bigcache.BigCache
 }
 
 // NewBigCache init new instance
-func NewBigCache(config *model.Config) ICaching {
+func NewBigCache(config *Config) ICaching {
 	currentSession := &BigCacheClient{nil}
 	client, err := bigcache.NewBigCache(config.BigCache)
 	if err != nil {

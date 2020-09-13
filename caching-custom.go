@@ -1,4 +1,4 @@
-package caching
+package database
 
 import (
 	"errors"
@@ -8,19 +8,18 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/golang-common-packages/database/model"
 	"github.com/golang-common-packages/hash"
 	"github.com/golang-common-packages/linear"
 )
 
-// CustomClient manage all custom caching action
+// CustomClient manage all custom caching actions
 type CustomClient struct {
 	client *linear.Client
 	close  chan struct{}
 }
 
 // NewCustom init new instance
-func NewCustom(config *model.Config) ICaching {
+func NewCustom(config *Config) ICaching {
 	currentSession := &CustomClient{linear.New(config.CustomCache.CacheSize, config.CustomCache.CleaningEnable), make(chan struct{})}
 
 	// Check record expiration time and remove

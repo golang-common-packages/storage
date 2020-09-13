@@ -1,27 +1,23 @@
 package database
 
-import (
-	"github.com/golang-common-packages/database/caching"
-	"github.com/golang-common-packages/database/model"
-	"github.com/golang-common-packages/database/nosql"
-	"github.com/golang-common-packages/database/sql"
-)
-
 const (
+	// SQL database
 	SQL = iota
+	// NOSQL database
 	NOSQL
+	// CACHING databse
 	CACHING
 )
 
-// New function for database abstract factory
-func New(databaseType int) func(databaseCompany int, config *model.Config) interface{} {
+// New database with abstract factory pattern
+func New(databaseType int) func(databaseCompany int, config *Config) interface{} {
 	switch databaseType {
 	case SQL:
-		return sql.New
+		return NewSQL
 	case NOSQL:
-		return nosql.New
+		return NewNoSQL
 	case CACHING:
-		return caching.New
+		return NewCaching
 	default:
 		return nil
 	}

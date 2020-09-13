@@ -1,4 +1,4 @@
-package caching
+package database
 
 import "hash/fnv"
 
