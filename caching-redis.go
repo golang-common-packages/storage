@@ -24,7 +24,7 @@ var (
 )
 
 // NewRedis init new instance
-func NewRedis(config *Config) ICaching {
+func NewRedis(config *Redis) ICaching {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
@@ -35,7 +35,7 @@ func NewRedis(config *Config) ICaching {
 	currentRedisClientSession := redisClientSessionMapping[configAsString]
 	if currentRedisClientSession == nil {
 		currentRedisClientSession = &RedisClient{nil}
-		client, err := currentRedisClientSession.connect(config.Redis)
+		client, err := currentRedisClientSession.connect(config)
 		if err != nil {
 			panic(err)
 		} else {
@@ -49,7 +49,7 @@ func NewRedis(config *Config) ICaching {
 }
 
 // connect private method establish redis connection
-func (r *RedisClient) connect(data Redis) (client *redis.Client, err error) {
+func (r *RedisClient) connect(data *Redis) (client *redis.Client, err error) {
 	if r.Client == nil {
 		client = redis.NewClient(&redis.Options{
 			Addr:       data.Host,

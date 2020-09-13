@@ -25,7 +25,7 @@ var (
 )
 
 // NewCustom init new instance
-func NewCustom(config *Config) ICaching {
+func NewCustom(config *CustomCache) ICaching {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
@@ -35,13 +35,13 @@ func NewCustom(config *Config) ICaching {
 
 	currentCustomClientSession := customClientSessionMapping[configAsString]
 	if currentCustomClientSession == nil {
-		currentCustomClientSession = &CustomClient{linear.New(config.CustomCache.CacheSize, config.CustomCache.CleaningEnable), make(chan struct{})}
+		currentCustomClientSession = &CustomClient{linear.New(config.CacheSize, config.CleaningEnable), make(chan struct{})}
 		customClientSessionMapping[configAsString] = currentCustomClientSession
 		log.Println("Custom caching is ready")
 
 		// Check record expiration time and remove
 		go func() {
-			ticker := time.NewTicker(config.CustomCache.CleaningInterval)
+			ticker := time.NewTicker(config.CleaningInterval)
 			defer ticker.Stop()
 
 			for {

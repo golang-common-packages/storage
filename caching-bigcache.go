@@ -24,7 +24,7 @@ var (
 )
 
 // NewBigCache init new instance
-func NewBigCache(config *Config) ICaching {
+func NewBigCache(config *bigcache.Config) ICaching {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
@@ -35,7 +35,7 @@ func NewBigCache(config *Config) ICaching {
 	currentBigCacheClientSession := bigCacheClientSessionMapping[configAsString]
 	if currentBigCacheClientSession == nil {
 		currentBigCacheClientSession = &BigCacheClient{nil}
-		client, err := bigcache.NewBigCache(config.BigCache)
+		client, err := bigcache.NewBigCache(*config)
 		if err != nil {
 			panic(err)
 		} else {

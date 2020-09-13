@@ -33,11 +33,11 @@ const (
 func NewCaching(databaseCompany int, config *Config) interface{} {
 	switch databaseCompany {
 	case CUSTOM:
-		return NewCustom(config)
+		return NewCustom(&config.CustomCache)
 	case REDIS:
-		return NewRedis(config)
+		return NewRedis(&config.Redis)
 	case BIGCACHE:
-		return NewBigCache(config)
+		return NewBigCache(&config.BigCache)
 	}
 
 	return nil
