@@ -94,10 +94,11 @@ func (m *MongoClient) GetALL(
 			if err != nil {
 				return err
 			}
-		}
-		f, err = bsonGenerator(Match{})
-		if err != nil {
-			return err
+		} else {
+			f, err = bsonGenerator(Match{})
+			if err != nil {
+				return err
+			}
 		}
 
 		if filter, ok := f.(bson.M); ok {
