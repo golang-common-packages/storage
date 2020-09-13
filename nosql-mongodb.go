@@ -24,8 +24,10 @@ type MongoClient struct {
 	Config *MongoDB
 }
 
-// mongoClientSessionMapping singleton pattern
-var mongoClientSessionMapping map[string]*MongoClient
+var (
+	// mongoClientSessionMapping singleton pattern
+	mongoClientSessionMapping = make(map[string]*MongoClient)
+)
 
 // NewMongoDB init new instance
 func NewMongoDB(config *MongoDB) INoSQL {

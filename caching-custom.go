@@ -19,8 +19,10 @@ type CustomClient struct {
 	close  chan struct{}
 }
 
-// customClientSessionMapping singleton pattern
-var customClientSessionMapping map[string]*CustomClient
+var (
+	// customClientSessionMapping singleton pattern
+	customClientSessionMapping = make(map[string]*CustomClient)
+)
 
 // NewCustom init new instance
 func NewCustom(config *Config) ICaching {

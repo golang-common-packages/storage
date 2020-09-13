@@ -18,8 +18,10 @@ type BigCacheClient struct {
 	Client *bigcache.BigCache
 }
 
-// bigCacheClientSessionMapping singleton pattern
-var bigCacheClientSessionMapping map[string]*BigCacheClient
+var (
+	// bigCacheClientSessionMapping singleton pattern
+	bigCacheClientSessionMapping = make(map[string]*BigCacheClient)
+)
 
 // NewBigCache init new instance
 func NewBigCache(config *Config) ICaching {

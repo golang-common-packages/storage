@@ -16,8 +16,10 @@ type SQLLikeClient struct {
 	Config *LIKE
 }
 
-// sqlLikeClientSessionMapping singleton pattern
-var sqlLikeClientSessionMapping map[string]*SQLLikeClient
+var (
+	// sqlLikeClientSessionMapping singleton pattern
+	sqlLikeClientSessionMapping = make(map[string]*SQLLikeClient)
+)
 
 // NewSQLLike init new instance
 // The sql package must be used in conjunction with a database driver. See https://golang.org/s/sqldrivers for a list of driverNames.

@@ -18,8 +18,10 @@ type RedisClient struct {
 	Client *redis.Client
 }
 
-// redisClientSessionMapping singleton pattern
-var redisClientSessionMapping map[string]*RedisClient
+var (
+	// redisClientSessionMapping singleton pattern
+	redisClientSessionMapping = make(map[string]*RedisClient)
+)
 
 // NewRedis init new instance
 func NewRedis(config *Config) ICaching {
