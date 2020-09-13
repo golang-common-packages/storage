@@ -1,4 +1,4 @@
-module github.com/golang-common-packages/database
+module github.com/golang-common-packages/storage
 
 go 1.13
 

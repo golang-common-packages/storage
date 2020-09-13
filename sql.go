@@ -1,4 +1,4 @@
-package database
+package storage
 
 // ISQL factory pattern interface
 type ISQL interface {
