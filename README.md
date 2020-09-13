@@ -1,4 +1,4 @@
-# Database
+# Storage
 [![Go Report Card](https://goreportcard.com/badge/github.com/golang-common-packages/storage)](https://goreportcard.com/report/github.com/golang-common-packages/storage)
 
 ## Note
