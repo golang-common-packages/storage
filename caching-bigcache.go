@@ -18,18 +18,32 @@ type BigCacheClient struct {
 	Client *bigcache.BigCache
 }
 
+// bigCacheClientSessionMapping singleton pattern
+var bigCacheClientSessionMapping map[string]*BigCacheClient
+
 // NewBigCache init new instance
 func NewBigCache(config *Config) ICaching {
-	currentSession := &BigCacheClient{nil}
-	client, err := bigcache.NewBigCache(config.BigCache)
+	hasher := &hash.Client{}
+	configAsJSON, err := json.Marshal(config)
 	if err != nil {
 		panic(err)
-	} else {
-		currentSession.Client = client
-		log.Println("BigCache is ready")
+	}
+	configAsString := hasher.SHA1(string(configAsJSON))
+
+	currentBigCacheClientSession := bigCacheClientSessionMapping[configAsString]
+	if currentBigCacheClientSession == nil {
+		currentBigCacheClientSession = &BigCacheClient{nil}
+		client, err := bigcache.NewBigCache(config.BigCache)
+		if err != nil {
+			panic(err)
+		} else {
+			currentBigCacheClientSession.Client = client
+			bigCacheClientSessionMapping[configAsString] = currentBigCacheClientSession
+			log.Println("Connected to BigCache Server")
+		}
 	}
 
-	return currentSession
+	return currentBigCacheClientSession
 }
 
 // Middleware for echo framework

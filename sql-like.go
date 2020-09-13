@@ -3,44 +3,62 @@ package database
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"log"
 	"time"
+
+	"github.com/golang-common-packages/hash"
 )
 
-// Client manage all SQL-Like actions
-type Client struct {
-	db     *sql.DB
+// SQLLikeClient manage all SQL-Like actions
+type SQLLikeClient struct {
+	Client *sql.DB
 	Config *LIKE
 }
 
+// sqlLikeClientSessionMapping singleton pattern
+var sqlLikeClientSessionMapping map[string]*SQLLikeClient
+
 // NewSQLLike init new instance
 // The sql package must be used in conjunction with a database driver. See https://golang.org/s/sqldrivers for a list of driverNames.
-func NewSQLLike(config *LIKE) *Client {
-	currentClient := &Client{nil, nil}
-
-	db, err := sql.Open(config.DriverName, config.DataSourceName)
+func NewSQLLike(config *LIKE) *SQLLikeClient {
+	hasher := &hash.Client{}
+	configAsJSON, err := json.Marshal(config)
 	if err != nil {
-		log.Println("Error when try to init SQL server: ", err)
 		panic(err)
 	}
+	configAsString := hasher.SHA1(string(configAsJSON))
 
-	db.SetConnMaxLifetime(config.MaxConnectionLifetime)
-	db.SetMaxIdleConns(config.MaxConnectionIdle)
-	db.SetMaxOpenConns(config.MaxConnectionOpen)
+	currentSQLLikeSession := sqlLikeClientSessionMapping[configAsString]
+	if currentSQLLikeSession == nil {
+		currentSQLLikeSession = &SQLLikeClient{nil, nil}
 
-	if err := db.PingContext(context.TODO()); err != nil {
-		log.Println("Error when try to connect to SQL server: ", err)
-		panic(err)
+		client, err := sql.Open(config.DriverName, config.DataSourceName)
+		if err != nil {
+			log.Println("Error when try to init SQL server: ", err)
+			panic(err)
+		}
+
+		client.SetConnMaxLifetime(config.MaxConnectionLifetime)
+		client.SetMaxIdleConns(config.MaxConnectionIdle)
+		client.SetMaxOpenConns(config.MaxConnectionOpen)
+
+		if err := client.PingContext(context.TODO()); err != nil {
+			log.Println("Error when try to connect to SQL server: ", err)
+			panic(err)
+		}
+
+		currentSQLLikeSession.Client = client
+		currentSQLLikeSession.Config = config
+		sqlLikeClientSessionMapping[configAsString] = currentSQLLikeSession
+		log.Println("Connected to SQL-Like Server")
 	}
 
-	currentClient.db = db
-	log.Println("Connected to SQL-Like Server")
-
-	return currentClient
+	return currentSQLLikeSession
 }
 
 // Execute return results based on 'query' and 'dataModel'
-func (c *Client) Execute(
+func (c *SQLLikeClient) Execute(
 	query string,
 	dataModel interface{}) (interface{}, error) {
 
@@ -48,7 +66,7 @@ func (c *Client) Execute(
 	_, cancel := context.WithTimeout(context.TODO(), 60*time.Second)
 	defer cancel()
 
-	rows, err := c.db.QueryContext(context.TODO(), query)
+	rows, err := c.Client.QueryContext(context.TODO(), query)
 	if err != nil {
 		return nil, err
 	}

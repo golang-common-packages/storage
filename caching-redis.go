@@ -18,18 +18,32 @@ type RedisClient struct {
 	Client *redis.Client
 }
 
+// redisClientSessionMapping singleton pattern
+var redisClientSessionMapping map[string]*RedisClient
+
 // NewRedis init new instance
 func NewRedis(config *Config) ICaching {
-	currentSession := &RedisClient{nil}
-	client, err := currentSession.connect(config.Redis)
+	hasher := &hash.Client{}
+	configAsJSON, err := json.Marshal(config)
 	if err != nil {
 		panic(err)
-	} else {
-		currentSession.Client = client
-		log.Println("Connected to Redis Server")
+	}
+	configAsString := hasher.SHA1(string(configAsJSON))
+
+	currentRedisClientSession := redisClientSessionMapping[configAsString]
+	if currentRedisClientSession == nil {
+		currentRedisClientSession = &RedisClient{nil}
+		client, err := currentRedisClientSession.connect(config.Redis)
+		if err != nil {
+			panic(err)
+		} else {
+			currentRedisClientSession.Client = client
+			redisClientSessionMapping[configAsString] = currentRedisClientSession
+			log.Println("Connected to Redis Server")
+		}
 	}
 
-	return currentSession
+	return currentRedisClientSession
 }
 
 // connect private method establish redis connection
@@ -44,7 +58,7 @@ func (r *RedisClient) connect(data Redis) (client *redis.Client, err error) {
 
 		_, err := client.Ping().Result()
 		if err != nil {
-			log.Println("Fail to connect redis: ", err)
+			log.Println("Connect to redis fail: ", err)
 			return nil, err
 		}
 	} else {

@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -13,6 +14,8 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"github.com/golang-common-packages/hash"
 )
 
 // MongoClient manage all mongodb actions
@@ -21,31 +24,45 @@ type MongoClient struct {
 	Config *MongoDB
 }
 
+// mongoClientSessionMapping singleton pattern
+var mongoClientSessionMapping map[string]*MongoClient
+
 // NewMongoDB init new instance
 func NewMongoDB(config *MongoDB) INoSQL {
-	currentSession := &MongoClient{nil, nil}
-
-	// Init Client options base on URI
-	clientOptions := options.Client().ApplyURI(getConnectionURI(config))
-
-	// Establish MongoDB connection
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+	hasher := &hash.Client{}
+	configAsJSON, err := json.Marshal(config)
 	if err != nil {
-		log.Println("Error when try to connect to Mongodb server: ", err)
 		panic(err)
 	}
+	configAsString := hasher.SHA1(string(configAsJSON))
 
-	// Check the connection status
-	if err := client.Ping(context.TODO(), nil); err != nil {
-		log.Println("Can not ping to Mongodb server: ", err)
-		panic(err)
+	currentMongoSession := mongoClientSessionMapping[configAsString]
+	if currentMongoSession == nil {
+		currentMongoSession = &MongoClient{nil, nil}
+
+		// Init Client options base on URI
+		clientOptions := options.Client().ApplyURI(getConnectionURI(config))
+
+		// Establish MongoDB connection
+		client, err := mongo.Connect(context.TODO(), clientOptions)
+		if err != nil {
+			log.Println("Error when try to connect to Mongodb server: ", err)
+			panic(err)
+		}
+
+		// Check the connection status
+		if err := client.Ping(context.TODO(), nil); err != nil {
+			log.Println("Can not ping to Mongodb server: ", err)
+			panic(err)
+		}
+
+		currentMongoSession.Client = client
+		currentMongoSession.Config = config
+		mongoClientSessionMapping[configAsString] = currentMongoSession
+		log.Println("Connected to MongoDB Server")
 	}
 
-	currentSession.Client = client
-	currentSession.Config = config
-	log.Println("Connected to MongoDB Server")
-
-	return currentSession
+	return currentMongoSession
 }
 
 // getConnectionURL return mongo connection URI

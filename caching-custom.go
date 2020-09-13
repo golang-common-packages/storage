@@ -1,6 +1,7 @@
 package database
 
 import (
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -18,37 +19,52 @@ type CustomClient struct {
 	close  chan struct{}
 }
 
+// customClientSessionMapping singleton pattern
+var customClientSessionMapping map[string]*CustomClient
+
 // NewCustom init new instance
 func NewCustom(config *Config) ICaching {
-	currentSession := &CustomClient{linear.New(config.CustomCache.CacheSize, config.CustomCache.CleaningEnable), make(chan struct{})}
+	hasher := &hash.Client{}
+	configAsJSON, err := json.Marshal(config)
+	if err != nil {
+		panic(err)
+	}
+	configAsString := hasher.SHA1(string(configAsJSON))
 
-	// Check record expiration time and remove
-	go func() {
-		ticker := time.NewTicker(config.CustomCache.CleaningInterval)
-		defer ticker.Stop()
+	currentCustomClientSession := customClientSessionMapping[configAsString]
+	if currentCustomClientSession == nil {
+		currentCustomClientSession = &CustomClient{linear.New(config.CustomCache.CacheSize, config.CustomCache.CleaningEnable), make(chan struct{})}
+		customClientSessionMapping[configAsString] = currentCustomClientSession
+		log.Println("Custom caching is ready")
 
-		for {
-			select {
-			case <-ticker.C:
-				items := currentSession.client.GetItems()
-				items.Range(func(key, value interface{}) bool {
-					item := value.(customCacheItem)
+		// Check record expiration time and remove
+		go func() {
+			ticker := time.NewTicker(config.CustomCache.CleaningInterval)
+			defer ticker.Stop()
 
-					if item.expires < time.Now().UnixNano() {
-						k, _ := key.(string)
-						currentSession.client.Get(k)
-					}
+			for {
+				select {
+				case <-ticker.C:
+					items := currentCustomClientSession.client.GetItems()
+					items.Range(func(key, value interface{}) bool {
+						item := value.(customCacheItem)
 
-					return true
-				})
+						if item.expires < time.Now().UnixNano() {
+							k, _ := key.(string)
+							currentCustomClientSession.client.Get(k)
+						}
 
-			case <-currentSession.close:
-				return
+						return true
+					})
+
+				case <-currentCustomClientSession.close:
+					return
+				}
 			}
-		}
-	}()
+		}()
+	}
 
-	return currentSession
+	return currentCustomClientSession
 }
 
 // Middleware for echo framework
