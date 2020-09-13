@@ -1,15 +1,14 @@
-package caching
+package database
 
 import (
 	"time"
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/golang-common-packages/database/model"
 	"github.com/golang-common-packages/hash"
 )
 
-// ICaching interface for database caching factory pattern
+// ICaching caching factory pattern interface
 type ICaching interface {
 	Middleware(hash hash.IHash) echo.MiddlewareFunc
 	Get(key string) (interface{}, error)
@@ -22,13 +21,16 @@ type ICaching interface {
 }
 
 const (
+	// CUSTOM caching on local memory
 	CUSTOM = iota
+	// BIGCACHE database
 	BIGCACHE
+	// REDIS database
 	REDIS
 )
 
-// New function for database caching factory pattern
-func New(databaseCompany int, config *model.Config) interface{} {
+// NewCaching factory pattern
+func NewCaching(databaseCompany int, config *Config) interface{} {
 	switch databaseCompany {
 	case CUSTOM:
 		return NewCustom(config)

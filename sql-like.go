@@ -1,35 +1,25 @@
-package sql
+package database
 
 import (
 	"context"
 	"database/sql"
 	"log"
 	"time"
-
-	"github.com/golang-common-packages/database/model"
 )
 
-// Client manage all SQL-Like API
+// Client manage all SQL-Like actions
 type Client struct {
 	db     *sql.DB
-	Config *model.LIKE
+	Config *LIKE
 }
 
-var (
-	ctx    context.Context
-	cancel context.CancelFunc
-)
-
-// NewSQLLike function return a new SQL-Like client
+// NewSQLLike init new instance
 // The sql package must be used in conjunction with a database driver. See https://golang.org/s/sqldrivers for a list of driverNames.
-func NewSQLLike(config *model.LIKE) *Client {
-
-	ctx, cancel = context.WithTimeout(ctx, 3*time.Second)
+func NewSQLLike(config *LIKE) *Client {
 	currentClient := &Client{nil, nil}
 
 	db, err := sql.Open(config.DriverName, config.DataSourceName)
 	if err != nil {
-		cancel()
 		log.Println("Error when try to init SQL server: ", err)
 		panic(err)
 	}
@@ -38,13 +28,13 @@ func NewSQLLike(config *model.LIKE) *Client {
 	db.SetMaxIdleConns(config.MaxConnectionIdle)
 	db.SetMaxOpenConns(config.MaxConnectionOpen)
 
-	if err := db.PingContext(ctx); err != nil {
-		cancel()
+	if err := db.PingContext(context.TODO()); err != nil {
 		log.Println("Error when try to connect to SQL server: ", err)
 		panic(err)
 	}
 
 	currentClient.db = db
+	log.Println("Connected to SQL-Like Server")
 
 	return currentClient
 }
@@ -55,10 +45,10 @@ func (c *Client) Execute(
 	dataModel interface{}) (interface{}, error) {
 
 	var results []interface{}
-	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
+	_, cancel := context.WithTimeout(context.TODO(), 60*time.Second)
 	defer cancel()
 
-	rows, err := c.db.QueryContext(ctx, query)
+	rows, err := c.db.QueryContext(context.TODO(), query)
 	if err != nil {
 		return nil, err
 	}

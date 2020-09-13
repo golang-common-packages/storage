@@ -1,6 +1,7 @@
-package nosql
+package database
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
@@ -12,32 +13,30 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/golang-common-packages/database/model"
 )
 
-// MongoClient manage all mongo API
+// MongoClient manage all mongodb actions
 type MongoClient struct {
 	Client *mongo.Client
-	Config *model.MongoDB
+	Config *MongoDB
 }
 
-// NewMongoDB function return a new mongo client
-func NewMongoDB(config *model.MongoDB) INoSQL {
+// NewMongoDB init new instance
+func NewMongoDB(config *MongoDB) INoSQL {
 	currentSession := &MongoClient{nil, nil}
 
 	// Init Client options base on URI
 	clientOptions := options.Client().ApplyURI(getConnectionURI(config))
 
 	// Establish MongoDB connection
-	client, err := mongo.Connect(ctx, clientOptions)
+	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 		log.Println("Error when try to connect to Mongodb server: ", err)
 		panic(err)
 	}
 
 	// Check the connection status
-	if err := client.Ping(ctx, nil); err != nil {
+	if err := client.Ping(context.TODO(), nil); err != nil {
 		log.Println("Can not ping to Mongodb server: ", err)
 		panic(err)
 	}
@@ -50,7 +49,7 @@ func NewMongoDB(config *model.MongoDB) INoSQL {
 }
 
 // getConnectionURL return mongo connection URI
-func getConnectionURI(config *model.MongoDB) (URI string) {
+func getConnectionURI(config *MongoDB) (URI string) {
 	host := strings.Join(config.Hosts, ",")
 	opt := strings.Join(config.Options, "?")
 	if config.User == "" && config.Password == "" {
@@ -86,9 +85,9 @@ func (m *MongoClient) GetALL(
 	dataModel reflect.Type) (results interface{}, err error) {
 
 	session := m.createSession()
-	defer session.EndSession(ctx)
+	defer session.EndSession(context.TODO())
 
-	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
+	if err = mongo.WithSession(context.TODO(), session, func(sc mongo.SessionContext) (err error) {
 		var f interface{}
 		if lastID != "" {
 			f, err = bsonGenerator(Match{"_id", GreaterThan, lastID})
@@ -112,8 +111,8 @@ func (m *MongoClient) GetALL(
 			findOptions.SetSort(bson.D{primitive.E{Key: "_id", Value: 1}})
 
 			collection := m.Client.Database(databaseName).Collection(collectionName)
-			cur, err := collection.Find(ctx, filter, findOptions)
-			defer cur.Close(ctx)
+			cur, err := collection.Find(context.TODO(), filter, findOptions)
+			defer cur.Close(context.TODO())
 			if err != nil {
 				return err
 			}
@@ -121,7 +120,7 @@ func (m *MongoClient) GetALL(
 			// Decode cursor
 			dataModel := reflect.Zero(reflect.SliceOf(dataModel)).Type()
 			results = reflect.New(dataModel).Interface()
-			err = cur.All(ctx, results)
+			err = cur.All(context.TODO(), results)
 			if err != nil {
 				return err
 			}
@@ -145,9 +144,9 @@ func (m *MongoClient) GetByField(
 	dataModel reflect.Type) (result interface{}, err error) {
 
 	session := m.createSession()
-	defer session.EndSession(ctx)
+	defer session.EndSession(context.TODO())
 
-	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
+	if err = mongo.WithSession(context.TODO(), session, func(sc mongo.SessionContext) (err error) {
 		f, err := bsonGenerator(Match{field, Equal, value})
 		if err != nil {
 			return err
@@ -155,7 +154,7 @@ func (m *MongoClient) GetByField(
 
 		if filter, ok := f.(bson.M); ok {
 			collection := m.Client.Database(databaseName).Collection(collectionName)
-			SR := collection.FindOne(ctx, filter)
+			SR := collection.FindOne(context.TODO(), filter)
 			if SR.Err() != nil {
 				return SR.Err()
 			}
@@ -183,11 +182,11 @@ func (m *MongoClient) Create(
 	dataModel interface{}) (result interface{}, err error) {
 
 	session := m.createSession()
-	defer session.EndSession(ctx)
+	defer session.EndSession(context.TODO())
 
-	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
+	if err = mongo.WithSession(context.TODO(), session, func(sc mongo.SessionContext) (err error) {
 		collection := m.Client.Database(databaseName).Collection(collectionName)
-		result, err = collection.InsertOne(ctx, dataModel)
+		result, err = collection.InsertOne(context.TODO(), dataModel)
 		if err != nil {
 			return err
 		}
@@ -209,9 +208,9 @@ func (m *MongoClient) Update(
 	dataModel interface{}) (result interface{}, err error) {
 
 	session := m.createSession()
-	defer session.EndSession(ctx)
+	defer session.EndSession(context.TODO())
 
-	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
+	if err = mongo.WithSession(context.TODO(), session, func(sc mongo.SessionContext) (err error) {
 		ud, err := bsonGenerator(Set{Replaces, dataModel})
 		if err != nil {
 			return err
@@ -233,7 +232,7 @@ func (m *MongoClient) Update(
 		}
 
 		collection := m.Client.Database(databaseName).Collection(collectionName)
-		result, err = collection.UpdateOne(ctx, filter, update)
+		result, err = collection.UpdateOne(context.TODO(), filter, update)
 		if err != nil {
 			return err
 		}
@@ -254,9 +253,9 @@ func (m *MongoClient) Delete(
 	ID string) (result interface{}, err error) {
 
 	session := m.createSession()
-	defer session.EndSession(ctx)
+	defer session.EndSession(context.TODO())
 
-	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
+	if err = mongo.WithSession(context.TODO(), session, func(sc mongo.SessionContext) (err error) {
 		f, err := bsonGenerator(Match{"_id", Equal, ID})
 		if err != nil {
 			return err
@@ -264,7 +263,7 @@ func (m *MongoClient) Delete(
 
 		if filter, ok := f.(bson.M); ok {
 			collection := m.Client.Database(databaseName).Collection(collectionName)
-			result, err = collection.DeleteOne(ctx, filter)
+			result, err = collection.DeleteOne(context.TODO(), filter)
 			if err != nil {
 				return err
 			}
@@ -287,9 +286,9 @@ func (m *MongoClient) MatchAndLookup(
 	dataModel reflect.Type) (results interface{}, err error) {
 
 	session := m.createSession()
-	defer session.EndSession(ctx)
+	defer session.EndSession(context.TODO())
 
-	if err = mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
+	if err = mongo.WithSession(context.TODO(), session, func(sc mongo.SessionContext) (err error) {
 		p, err := bsonGenerator(model)
 		if err != nil {
 			return err
@@ -297,8 +296,8 @@ func (m *MongoClient) MatchAndLookup(
 
 		if pipeline, ok := p.([]bson.M); ok {
 			collection := m.Client.Database(databaseName).Collection(collectionName)
-			cur, err := collection.Aggregate(ctx, pipeline)
-			defer cur.Close(ctx)
+			cur, err := collection.Aggregate(context.TODO(), pipeline)
+			defer cur.Close(context.TODO())
 			if err != nil {
 				return err
 			}
@@ -306,7 +305,7 @@ func (m *MongoClient) MatchAndLookup(
 			// Decode cursor
 			dataModel := reflect.Zero(reflect.SliceOf(dataModel)).Type()
 			results = reflect.New(dataModel).Interface()
-			err = cur.All(ctx, results)
+			err = cur.All(context.TODO(), results)
 			if err != nil {
 				return err
 			}

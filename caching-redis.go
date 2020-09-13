@@ -1,4 +1,4 @@
-package caching
+package database
 
 import (
 	"encoding/json"
@@ -10,17 +10,16 @@ import (
 	"github.com/go-redis/redis"
 	"github.com/labstack/echo/v4"
 
-	"github.com/golang-common-packages/database/model"
 	"github.com/golang-common-packages/hash"
 )
 
-// RedisClient manage all redis action
+// RedisClient manage all redis actions
 type RedisClient struct {
 	Client *redis.Client
 }
 
 // NewRedis init new instance
-func NewRedis(config *model.Config) ICaching {
+func NewRedis(config *Config) ICaching {
 	currentSession := &RedisClient{nil}
 	client, err := currentSession.connect(config.Redis)
 	if err != nil {
@@ -34,7 +33,7 @@ func NewRedis(config *model.Config) ICaching {
 }
 
 // connect private method establish redis connection
-func (r *RedisClient) connect(data model.Redis) (client *redis.Client, err error) {
+func (r *RedisClient) connect(data Redis) (client *redis.Client, err error) {
 	if r.Client == nil {
 		client = redis.NewClient(&redis.Options{
 			Addr:       data.Host,
