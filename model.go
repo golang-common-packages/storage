@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"io"
 	"time"
 
 	"github.com/allegro/bigcache/v2"
@@ -121,4 +122,22 @@ type customCacheItem struct {
 }
 
 // End Caching Models //
+// -------------------------------------------------------------------------
+// Begin File Models //
+type FileModel struct {
+	ParentID      string    `json:"parentID,omitempty"`
+	SourcesID     string    `json:"sourcesID,omitempty"`
+	DestinationID string    `json:"destinationID,omitempty"`
+	Source        string    `json:"source,omitempty"`
+	Sources       []string  `json:"sources,omitempty"`
+	Destination   string    `json:"destination,omitempty"`
+	Destinations  []string  `json:"destinations,omitempty"`
+	Name          string    `json:"name,omitempty"`
+	MimeType      string    `json:"mimeType,omitempty"`
+	Path          string    `json:"path,omitempty"`
+	Content       io.Reader `json:"content,omitempty"`
+	Query         string    `json:"query,omitempty"`
+}
+
+// Begin File Models //
 // -------------------------------------------------------------------------

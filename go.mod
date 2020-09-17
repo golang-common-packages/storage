@@ -20,5 +20,6 @@ require (
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73 // indirect
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208 // indirect
 	golang.org/x/sys v0.0.0-20200909081042-eff7692f9009 // indirect
+	google.golang.org/api v0.32.0
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 )
