@@ -16,6 +16,7 @@ type Config struct {
 	Redis       Redis           `json:"redis,omitempty"`
 	CustomCache CustomCache     `json:"customCache,omitempty"`
 	BigCache    bigcache.Config `json:"bigCache,omitempty"`
+	GoogleDrive GoogleDrive     `json:"googleDrive,omitempty"`
 }
 
 // LIKE model for SQL-LIKE connection config
@@ -49,6 +50,12 @@ type CustomCache struct {
 	CacheSize        int64         `json:"cacheSize,omitempty"` // byte
 	CleaningEnable   bool          `json:"cleaningEnable,omitempty"`
 	CleaningInterval time.Duration `json:"cleaningInterval,omitempty"` // nanosecond
+}
+
+// GoogleDrive config model
+type GoogleDrive struct {
+	Token      string `json:"token,omitempty"`
+	Credential string `json:"credential,omitempty"`
 }
 
 // End Database Connection Models //
@@ -124,19 +131,14 @@ type customCacheItem struct {
 // End Caching Models //
 // -------------------------------------------------------------------------
 // Begin File Models //
-type FileModel struct {
-	ParentID      string    `json:"parentID,omitempty"`
-	SourcesID     string    `json:"sourcesID,omitempty"`
-	DestinationID string    `json:"destinationID,omitempty"`
-	Source        string    `json:"source,omitempty"`
-	Sources       []string  `json:"sources,omitempty"`
-	Destination   string    `json:"destination,omitempty"`
-	Destinations  []string  `json:"destinations,omitempty"`
-	Name          string    `json:"name,omitempty"`
-	MimeType      string    `json:"mimeType,omitempty"`
-	Path          string    `json:"path,omitempty"`
-	Content       io.Reader `json:"content,omitempty"`
-	Query         string    `json:"query,omitempty"`
+
+// DriveFileModel model for google drive file API
+type DriveFileModel struct {
+	ParentID  string    `json:"parentID,omitempty"`
+	SourcesID string    `json:"sourcesID,omitempty"`
+	Name      string    `json:"name,omitempty"`
+	MimeType  string    `json:"mimeType,omitempty"`
+	Content   io.Reader `json:"content,omitempty"`
 }
 
 // Begin File Models //

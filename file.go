@@ -4,10 +4,10 @@ import "context"
 
 // IFILE factory pattern interface
 type IFILE interface {
-	List(fileModel *FileModel) (interface{}, error)
-	Upload(fileModel *FileModel, parentID string) (interface{}, error)
-	Download(fileModel *FileModel) (interface{}, error)
-	Delete(fileModel *FileModel) error
+	List(pageSize int64, pageToken ...string) (interface{}, error)
+	Upload(fileModel interface{}) (interface{}, error)
+	Download(fileModel *DriveFileModel) (interface{}, error)
+	Delete(fileModel *DriveFileModel) error
 }
 
 var (
@@ -28,7 +28,7 @@ func NewFile(
 
 	switch databaseCompany {
 	case DRIVE:
-		return NewDrive()
+		return NewDrive(&config.GoogleDrive)
 	}
 
 	return nil

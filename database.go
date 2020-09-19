@@ -1,15 +1,19 @@
 package storage
 
+/*
+	@SQL: SQL database
+	@NOSQL: NoSQL database
+	@CACHING: Caching database
+	@FILE: File service
+*/
 const (
-	// SQL database
 	SQL = iota
-	// NOSQL database
 	NOSQL
-	// CACHING databse
 	CACHING
+	FILE
 )
 
-// New database with abstract factory pattern
+// New database by abstract factory pattern
 func New(databaseType int) func(databaseCompany int, config *Config) interface{} {
 	switch databaseType {
 	case SQL:
@@ -18,6 +22,8 @@ func New(databaseType int) func(databaseCompany int, config *Config) interface{}
 		return NewNoSQL
 	case CACHING:
 		return NewCaching
+	case FILE:
+		return NewFile
 	default:
 		return nil
 	}
