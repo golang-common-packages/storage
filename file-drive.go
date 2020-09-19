@@ -170,11 +170,11 @@ func (dr *DriveServices) Upload(fileModel interface{}) (interface{}, error) {
 // }
 
 // Download function will return a file base on fileID
-func (dr *DriveServices) Download(fileModel *DriveFileModel) (interface{}, error) {
-	return dr.driveService.Files.Get(fileModel.SourcesID).Download()
+func (dr *DriveServices) Download(fileModel interface{}) (interface{}, error) {
+	return dr.driveService.Files.Get(fileModel.(DriveFileModel).SourcesID).Download()
 }
 
 // Delete a file base on ID
-func (dr *DriveServices) Delete(fileModel *DriveFileModel) error {
-	return dr.driveService.Files.Delete(fileModel.SourcesID).Do()
+func (dr *DriveServices) Delete(fileModel interface{}) error {
+	return dr.driveService.Files.Delete(fileModel.(DriveFileModel).SourcesID).Do()
 }

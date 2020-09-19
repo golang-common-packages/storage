@@ -6,8 +6,8 @@ import "context"
 type IFILE interface {
 	List(pageSize int64, pageToken ...string) (interface{}, error)
 	Upload(fileModel interface{}) (interface{}, error)
-	Download(fileModel *DriveFileModel) (interface{}, error)
-	Delete(fileModel *DriveFileModel) error
+	Download(fileModel interface{}) (interface{}, error)
+	Delete(fileModel interface{}) error
 }
 
 var (
