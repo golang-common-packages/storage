@@ -132,7 +132,7 @@ func saveToken(path string, token *oauth2.Token) {
 
 // List all files based on pageSize
 func (dr *DriveServices) List(pageSize int64, pageToken ...string) (interface{}, error) {
-	var fields googleapi.Field = "nextPageToken, files(id, name, fileExtension)"
+	var fields googleapi.Field = "nextPageToken, files(id, name, fileExtension, mimeType)"
 
 	if len(pageToken) == 0 {
 		return dr.driveService.Files.List().PageSize(pageSize).Fields(fields).Do()
@@ -144,11 +144,22 @@ func (dr *DriveServices) List(pageSize int64, pageToken ...string) (interface{},
 // Upload a file to drive
 func (dr *DriveServices) Upload(name string, fileContent io.Reader, parents ...string) (interface{}, error) {
 	f := &drive.File{
-		Name: name, //should specify a file extension in the name, like Name: "cat.jpg"
+		Name:    name, //should specify a file extension in the name, like Name: "cat.jpg"
 		Parents: parents,
 	}
 
 	return dr.driveService.Files.Create(f).Media(fileContent).Do()
+}
+
+// CreateFolder on drive
+func (dr *DriveServices) CreateFolder(name string, parents ...string) (interface{}, error) {
+	f := &drive.File{
+		Name:     name, //should specify a file extension in the name, like Name: "cat.jpg"
+		MimeType: "application/vnd.google-apps.folder",
+		Parents:  parents,
+	}
+
+	return dr.driveService.Files.Create(f).Do()
 }
 
 // Download a file based on fileID
@@ -161,7 +172,13 @@ func (dr *DriveServices) Move(oldParentID, newParentID string, fileModel interfa
 	return dr.driveService.Files.Update(fileModel.(*drive.File).Id, fileModel.(*drive.File)).RemoveParents(oldParentID).AddParents(newParentID).Do()
 }
 
-// Delete a file/folder base on ID
-func (dr *DriveServices) Delete(fileModel interface{}) error {
-	return dr.driveService.Files.Delete(fileModel.(*drive.File).Id).Do()
+// Delete a file/folder base on IDs
+func (dr *DriveServices) Delete(fileIDs []string) error {
+	for _, fileID := range fileIDs {
+		if err := dr.driveService.Files.Delete(fileID).Do(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
