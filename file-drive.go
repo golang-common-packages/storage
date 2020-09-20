@@ -40,25 +40,36 @@ func NewDrive(config *GoogleDrive) IFILE {
 	currentDriveSession := driveClientSessionMapping[configAsString]
 	if currentDriveSession == nil {
 		currentDriveSession = &DriveServices{nil}
-		b, err := ioutil.ReadFile(config.Credential)
-		if err != nil {
-			log.Fatalf("Unable to read client secret file: %v", err)
+
+		if config.ByHTTPClient {
+			b, err := ioutil.ReadFile(config.Credential)
+			if err != nil {
+				log.Fatalf("Unable to read client secret file: %v", err)
+			}
+
+			// If modifying these scopes, delete your previously saved token.json.
+			oauth2Config, err := google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope)
+			if err != nil {
+				log.Fatalf("Unable to parse client secret file to config: %v", err)
+			}
+			client := getClient(oauth2Config, config.Token)
+
+			srv, err := drive.New(client)
+			if err != nil {
+				log.Fatalf("Unable to retrieve Drive client: %v", err)
+			}
+
+			currentDriveSession.driveService = srv
+			driveClientSessionMapping[configAsString] = currentDriveSession
+		} else {
+			srv, err := drive.NewService(ctx)
+			if err != nil {
+				log.Fatalf("%v", err)
+			}
+
+			currentDriveSession.driveService = srv
 		}
 
-		// If modifying these scopes, delete your previously saved token.json.
-		oauth2Config, err := google.ConfigFromJSON(b, drive.DriveMetadataReadonlyScope)
-		if err != nil {
-			log.Fatalf("Unable to parse client secret file to config: %v", err)
-		}
-		client := getClient(oauth2Config, config.Token)
-
-		srv, err := drive.New(client)
-		if err != nil {
-			log.Fatalf("Unable to retrieve Drive client: %v", err)
-		}
-
-		currentDriveSession.driveService = srv
-		driveClientSessionMapping[configAsString] = currentDriveSession
 		log.Println("Connected to Google Drive")
 	}
 
@@ -121,7 +132,7 @@ func saveToken(path string, token *oauth2.Token) {
 
 // List all files based on pageSize
 func (dr *DriveServices) List(pageSize int64, pageToken ...string) (interface{}, error) {
-	var fields googleapi.Field = "nextPageToken, files(id, name)"
+	var fields googleapi.Field = "nextPageToken, files(id, name, fileExtension)"
 
 	if len(pageToken) == 0 {
 		return dr.driveService.Files.List().PageSize(pageSize).Fields(fields).Do()
@@ -131,10 +142,10 @@ func (dr *DriveServices) List(pageSize int64, pageToken ...string) (interface{},
 }
 
 // Upload a file to drive
-func (dr *DriveServices) Upload(fileModel interface{}, fileContent io.Reader) (interface{}, error) {
+func (dr *DriveServices) Upload(name string, fileContent io.Reader, parents ...string) (interface{}, error) {
 	f := &drive.File{
-		Name:    fileModel.(*drive.File).Name,
-		Parents: fileModel.(*drive.File).Parents,
+		Name: name, //should specify a file extension in the name, like Name: "cat.jpg"
+		Parents: parents,
 	}
 
 	return dr.driveService.Files.Create(f).Media(fileContent).Do()

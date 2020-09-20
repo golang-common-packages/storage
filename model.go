@@ -54,8 +54,9 @@ type CustomCache struct {
 
 // GoogleDrive config model
 type GoogleDrive struct {
-	Token      string `json:"token,omitempty"`
-	Credential string `json:"credential,omitempty"`
+	ByHTTPClient bool   `json:"byHTTPClient,omitempty"`
+	Token        string `json:"token,omitempty"`
+	Credential   string `json:"credential,omitempty"`
 }
 
 // End Database Connection Models //
@@ -135,6 +136,11 @@ type customCacheItem struct {
 // GoogleFileListModel for unmarshal object has interface type
 type GoogleFileListModel struct {
 	drive.FileList
+}
+
+// GoogleFileModel for unmarshal object has interface type
+type GoogleFileModel struct {
+	drive.File
 }
 
 // End Caching Models //

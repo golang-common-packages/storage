@@ -8,7 +8,7 @@ import (
 // IFILE factory pattern interface
 type IFILE interface {
 	List(pageSize int64, pageToken ...string) (interface{}, error)
-	Upload(fileModel interface{}, fileContent io.Reader) (interface{}, error)
+	Upload(name string, fileContent io.Reader, parents ...string) (interface{}, error)
 	Download(fileModel interface{}) (interface{}, error)
 	Move(oldParentID, newParentID string, fileModel interface{}) (interface{}, error)
 	Delete(fileModel interface{}) error

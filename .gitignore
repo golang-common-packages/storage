@@ -16,3 +16,4 @@
 /.idea
 examples/file/credentials.json
 examples/file/token.json
+examples/file/test.txt
