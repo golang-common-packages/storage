@@ -130,16 +130,3 @@ type customCacheItem struct {
 
 // End Caching Models //
 // -------------------------------------------------------------------------
-// Begin File Models //
-
-// DriveFileModel model for google drive file API
-type DriveFileModel struct {
-	ParentID  string    `json:"parentID,omitempty"`
-	SourcesID string    `json:"sourcesID,omitempty"`
-	Name      string    `json:"name,omitempty"`
-	MimeType  string    `json:"mimeType,omitempty"`
-	Content   io.Reader `json:"content,omitempty"`
-}
-
-// Begin File Models //
-// -------------------------------------------------------------------------

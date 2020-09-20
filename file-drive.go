@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -27,7 +28,7 @@ var (
 	driveClientSessionMapping = make(map[string]*DriveServices)
 )
 
-// NewDrive return a new mongo client based on singleton pattern
+// NewDrive init new instance
 func NewDrive(config *GoogleDrive) IFILE {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
@@ -129,52 +130,27 @@ func (dr *DriveServices) List(pageSize int64, pageToken ...string) (interface{},
 	return dr.driveService.Files.List().PageToken(pageToken[0]).PageSize(pageSize).Fields(fields).Do()
 }
 
-// Upload file to drive
-func (dr *DriveServices) Upload(fileModel interface{}) (interface{}, error) {
+// Upload a file to drive
+func (dr *DriveServices) Upload(fileModel interface{}, fileContent io.Reader) (interface{}, error) {
 	f := &drive.File{
-		MimeType: fileModel.(DriveFileModel).MimeType,
-		Name:     fileModel.(DriveFileModel).Name,
-		Parents:  []string{fileModel.(DriveFileModel).ParentID},
+		Name:    fileModel.(*drive.File).Name,
+		Parents: fileModel.(*drive.File).Parents,
 	}
 
-	return dr.driveService.Files.Create(f).Media(fileModel.(DriveFileModel).Content).Do()
+	return dr.driveService.Files.Create(f).Media(fileContent).Do()
 }
 
-// Download function will return a file base on fileID
-// func (dr *DriveServices) Download(fileModel *DriveFileModel) (interface{}, error) {
-// 	res, err := dr.driveService.Files.Get(fileModel.SourcesID).Download()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// Get file extension
-// 	fileExtension, err := mime.ExtensionsByType(res.Header.Get("Content-Type"))
-// 	if err != nil {
-// 		log.Println("Could not get file extension: " + err.Error())
-// 	}
-
-// Create empty file with extension
-// 	outFile, err := os.Create("uname" + fileExtension[0])
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	defer outFile.Close()
-
-// 	// Copy content to file that is created
-// 	_, err = io.Copy(outFile, res.Body)
-// 	if err != nil {
-// 		log.Println("Could not copy content to file: " + err.Error())
-// 	}
-
-// 	return "uname" + fileExtension[0], nil
-// }
-
-// Download function will return a file base on fileID
+// Download a file based on fileID
 func (dr *DriveServices) Download(fileModel interface{}) (interface{}, error) {
-	return dr.driveService.Files.Get(fileModel.(DriveFileModel).SourcesID).Download()
+	return dr.driveService.Files.Get(fileModel.(*drive.File).Id).Download()
 }
 
-// Delete a file base on ID
+// Move a file to new location based on fileID
+func (dr *DriveServices) Move(oldParentID, newParentID string, fileModel interface{}) (interface{}, error) {
+	return dr.driveService.Files.Update(fileModel.(*drive.File).Id, fileModel.(*drive.File)).RemoveParents(oldParentID).AddParents(newParentID).Do()
+}
+
+// Delete a file/folder base on ID
 func (dr *DriveServices) Delete(fileModel interface{}) error {
-	return dr.driveService.Files.Delete(fileModel.(DriveFileModel).SourcesID).Do()
+	return dr.driveService.Files.Delete(fileModel.(*drive.File).Id).Do()
 }
