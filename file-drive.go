@@ -121,7 +121,7 @@ func saveToken(path string, token *oauth2.Token) {
 
 // List all files based on pageSize
 func (dr *DriveServices) List(pageSize int64, pageToken ...string) (interface{}, error) {
-	var fields googleapi.Field = "nextPageToken, items(id, name, kind, created, updated)"
+	var fields googleapi.Field = "nextPageToken, files(id, name)"
 
 	if len(pageToken) == 0 {
 		return dr.driveService.Files.List().PageSize(pageSize).Fields(fields).Do()

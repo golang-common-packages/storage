@@ -1,10 +1,10 @@
 package storage
 
 import (
-	"io"
 	"time"
 
 	"github.com/allegro/bigcache/v2"
+	"google.golang.org/api/drive/v3"
 )
 
 // Begin Database Connection Models //
@@ -126,6 +126,15 @@ const (
 type customCacheItem struct {
 	data    interface{}
 	expires int64
+}
+
+// End Caching Models //
+// -------------------------------------------------------------------------
+// Begin File Models //
+
+// GoogleFileListModel for unmarshal object has interface type
+type GoogleFileListModel struct {
+	drive.FileList
 }
 
 // End Caching Models //
