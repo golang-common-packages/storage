@@ -26,6 +26,9 @@ func main() {
 		log.Fatalf("Unable to unmarshal: %v", err)
 	}
 
+	fmt.Println("NextPageToken:")
+	fmt.Println(fileList.NextPageToken)
+
 	fmt.Println("Files:")
 	if len(fileList.Files) == 0 {
 		fmt.Println("No files found.")
