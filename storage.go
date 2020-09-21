@@ -1,5 +1,7 @@
 package storage
 
+import "context"
+
 /*
 	@SQL: SQL database
 	@NOSQL: NoSQL database
@@ -11,6 +13,10 @@ const (
 	NOSQL
 	CACHING
 	FILE
+)
+
+var (
+	ctx = context.Background()
 )
 
 // New database by abstract factory pattern

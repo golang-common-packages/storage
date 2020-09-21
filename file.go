@@ -1,9 +1,6 @@
 package storage
 
-import (
-	"context"
-	"io"
-)
+import "io"
 
 // IFILE factory pattern interface
 type IFILE interface {
@@ -15,14 +12,8 @@ type IFILE interface {
 	Delete(fileIDs []string) error
 }
 
-var (
-	ctx = context.Background()
-)
-
-/*
-	@DRIVE: Google Drive
-*/
 const (
+	// DRIVE cloud services
 	DRIVE = iota
 )
 

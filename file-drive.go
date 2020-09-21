@@ -62,12 +62,14 @@ func NewDrive(config *GoogleDrive) IFILE {
 			currentDriveSession.driveService = srv
 			driveClientSessionMapping[configAsString] = currentDriveSession
 		} else {
+			os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", config.Credential)
 			srv, err := drive.NewService(ctx)
 			if err != nil {
-				log.Fatalf("%v", err)
+				log.Fatalf("Unable to retrieve Drive client: %v", err)
 			}
 
 			currentDriveSession.driveService = srv
+			driveClientSessionMapping[configAsString] = currentDriveSession
 		}
 
 		log.Println("Connected to Google Drive")
