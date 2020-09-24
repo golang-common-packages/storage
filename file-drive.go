@@ -9,7 +9,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
+	"github.com/gammazero/workerpool"
+	multierror "github.com/hashicorp/go-multierror"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
@@ -21,6 +24,7 @@ import (
 // DriveServices manage all drive action
 type DriveServices struct {
 	driveService *drive.Service
+	config       *GoogleDrive
 }
 
 var (
@@ -39,7 +43,7 @@ func NewDrive(config *GoogleDrive) IFILE {
 
 	currentDriveSession := driveClientSessionMapping[configAsString]
 	if currentDriveSession == nil {
-		currentDriveSession = &DriveServices{nil}
+		currentDriveSession = &DriveServices{nil, nil}
 
 		if config.ByHTTPClient {
 			b, err := ioutil.ReadFile(config.Credential)
@@ -60,7 +64,9 @@ func NewDrive(config *GoogleDrive) IFILE {
 			}
 
 			currentDriveSession.driveService = srv
+			currentDriveSession.config = config
 			driveClientSessionMapping[configAsString] = currentDriveSession
+
 		} else {
 			os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", config.Credential)
 			srv, err := drive.NewService(ctx)
@@ -69,6 +75,7 @@ func NewDrive(config *GoogleDrive) IFILE {
 			}
 
 			currentDriveSession.driveService = srv
+			currentDriveSession.config = config
 			driveClientSessionMapping[configAsString] = currentDriveSession
 		}
 
@@ -176,10 +183,25 @@ func (dr *DriveServices) Move(oldParentID, newParentID string, fileModel interfa
 
 // Delete a file/folder base on IDs
 func (dr *DriveServices) Delete(fileIDs []string) error {
+	var mu sync.Mutex
+	var errs *multierror.Error
+	dwp := workerpool.New(dr.config.PoolSize)
+
 	for _, fileID := range fileIDs {
-		if err := dr.driveService.Files.Delete(fileID).Do(); err != nil {
-			return err
-		}
+		dwp.Submit(func() {
+			if err := dr.driveService.Files.Delete(fileID).Do(); err != nil {
+				mu.Lock()
+				errs = multierror.Append(errs, err)
+				mu.Unlock()
+			}
+		})
+	}
+
+	dwp.StopWait()
+
+	// Return an error if any failed
+	if err := errs.ErrorOrNil(); err != nil {
+		return err
 	}
 
 	return nil

@@ -54,6 +54,7 @@ type CustomCache struct {
 
 // GoogleDrive config model
 type GoogleDrive struct {
+	PoolSize     int    `json:"poolSize"`
 	ByHTTPClient bool   `json:"byHTTPClient,omitempty"`
 	Token        string `json:"token,omitempty"`
 	Credential   string `json:"credential,omitempty"`

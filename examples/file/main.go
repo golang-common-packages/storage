@@ -11,6 +11,7 @@ import (
 
 func main() {
 	fileService := storage.New(storage.FILE)(storage.DRIVE, &storage.Config{GoogleDrive: storage.GoogleDrive{
+		PoolSize:     4,
 		ByHTTPClient: false,
 		Credential:   "credentials.json",
 		Token:        "token.json",
