@@ -17,6 +17,7 @@ type Config struct {
 	CustomCache CustomCache     `json:"customCache,omitempty"`
 	BigCache    bigcache.Config `json:"bigCache,omitempty"`
 	GoogleDrive GoogleDrive     `json:"googleDrive,omitempty"`
+	CustomFile  CustomFile      `json:"customFile,omitempty"`
 }
 
 // LIKE model for SQL-LIKE connection config
@@ -62,6 +63,8 @@ type GoogleDrive struct {
 
 // CustomFile config model
 type CustomFile struct {
+	PoolSize             int    `json:"poolSize"`
+	RootServiceDirectory string `json:"rootDirectory"`
 }
 
 // End Database Connection Models //

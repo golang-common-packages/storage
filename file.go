@@ -16,6 +16,8 @@ type IFILE interface {
 const (
 	// DRIVE cloud services
 	DRIVE = iota
+	// CUSTOMFILE file services
+	CUSTOMFILE
 )
 
 // NewFile Factory Pattern
@@ -26,6 +28,8 @@ func NewFile(
 	switch databaseCompany {
 	case DRIVE:
 		return NewDrive(&config.GoogleDrive)
+	case CUSTOMFILE:
+		return NewCustomFile(&config.CustomFile)
 	}
 
 	return nil
