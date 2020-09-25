@@ -13,19 +13,19 @@ import (
 	"github.com/golang-common-packages/linear"
 )
 
-// CustomClient manage all custom caching actions
-type CustomClient struct {
+// CustomCachingClient manage all custom caching actions
+type CustomCachingClient struct {
 	client *linear.Client
 	close  chan struct{}
 }
 
 var (
 	// customClientSessionMapping singleton pattern
-	customClientSessionMapping = make(map[string]*CustomClient)
+	customClientSessionMapping = make(map[string]*CustomCachingClient)
 )
 
-// NewCustom init new instance
-func NewCustom(config *CustomCache) ICaching {
+// NewCustomCaching init new instance
+func NewCustomCaching(config *CustomCache) ICaching {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
@@ -35,7 +35,7 @@ func NewCustom(config *CustomCache) ICaching {
 
 	currentCustomClientSession := customClientSessionMapping[configAsString]
 	if currentCustomClientSession == nil {
-		currentCustomClientSession = &CustomClient{linear.New(config.CacheSize, config.CleaningEnable), make(chan struct{})}
+		currentCustomClientSession = &CustomCachingClient{linear.New(config.CacheSize, config.CleaningEnable), make(chan struct{})}
 		customClientSessionMapping[configAsString] = currentCustomClientSession
 		log.Println("Custom caching is ready")
 
@@ -70,7 +70,7 @@ func NewCustom(config *CustomCache) ICaching {
 }
 
 // Middleware for echo framework
-func (cl *CustomClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
+func (cl *CustomCachingClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			token := c.Request().Header.Get(echo.HeaderAuthorization)
@@ -89,7 +89,7 @@ func (cl *CustomClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
 }
 
 // Get return value based on the key provided
-func (cl *CustomClient) Get(key string) (interface{}, error) {
+func (cl *CustomCachingClient) Get(key string) (interface{}, error) {
 	if key == "" {
 		return nil, errors.New("key must not empty")
 	}
@@ -112,7 +112,7 @@ func (cl *CustomClient) Get(key string) (interface{}, error) {
 }
 
 // GetMany return value based on the list of keys provided
-func (cl *CustomClient) GetMany(keys []string) (map[string]interface{}, []string, error) {
+func (cl *CustomCachingClient) GetMany(keys []string) (map[string]interface{}, []string, error) {
 	if len(keys) == 0 {
 		return nil, nil, errors.New("keys must not empty")
 	}
@@ -138,7 +138,7 @@ func (cl *CustomClient) GetMany(keys []string) (map[string]interface{}, []string
 }
 
 // Set new record set key and value
-func (cl *CustomClient) Set(key string, value interface{}, expire time.Duration) error {
+func (cl *CustomCachingClient) Set(key string, value interface{}, expire time.Duration) error {
 	if key == "" || value == nil {
 		return errors.New("key and value must not empty")
 	}
@@ -158,7 +158,7 @@ func (cl *CustomClient) Set(key string, value interface{}, expire time.Duration)
 }
 
 // Update new value over the key provided
-func (cl *CustomClient) Update(key string, value interface{}, expire time.Duration) error {
+func (cl *CustomCachingClient) Update(key string, value interface{}, expire time.Duration) error {
 	if key == "" || value == nil {
 		return errors.New("key and value must not empty")
 	}
@@ -183,7 +183,7 @@ func (cl *CustomClient) Update(key string, value interface{}, expire time.Durati
 }
 
 // Delete deletes the key and its value from the cache.
-func (cl *CustomClient) Delete(key string) error {
+func (cl *CustomCachingClient) Delete(key string) error {
 	if key == "" {
 		return errors.New("key must not empty")
 	}
@@ -196,7 +196,7 @@ func (cl *CustomClient) Delete(key string) error {
 }
 
 // Range over linear data structure
-func (cl *CustomClient) Range(f func(key, value interface{}) bool) {
+func (cl *CustomCachingClient) Range(f func(key, value interface{}) bool) {
 	fn := func(key, value interface{}) bool {
 		item := value.(customCacheItem)
 
@@ -211,17 +211,17 @@ func (cl *CustomClient) Range(f func(key, value interface{}) bool) {
 }
 
 // GetNumberOfRecords return number of records
-func (cl *CustomClient) GetNumberOfRecords() int {
+func (cl *CustomCachingClient) GetNumberOfRecords() int {
 	return cl.client.GetNumberOfKeys()
 }
 
 // GetCapacity method return redis database size
-func (cl *CustomClient) GetCapacity() (interface{}, error) {
+func (cl *CustomCachingClient) GetCapacity() (interface{}, error) {
 	return cl.client.GetLinearCurrentSize(), nil
 }
 
 // Close closes the cache and frees up resources.
-func (cl *CustomClient) Close() error {
+func (cl *CustomCachingClient) Close() error {
 	cl.close <- struct{}{}
 
 	return nil

@@ -60,6 +60,10 @@ type GoogleDrive struct {
 	Credential   string `json:"credential,omitempty"`
 }
 
+// CustomFile config model
+type CustomFile struct {
+}
+
 // End Database Connection Models //
 // -------------------------------------------------------------------------
 // Begin NoSQL Models //
