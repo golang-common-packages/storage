@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/allegro/bigcache/v2"
+	"google.golang.org/api/drive/v3"
 )
 
 // Begin Database Connection Models //
@@ -15,6 +16,8 @@ type Config struct {
 	Redis       Redis           `json:"redis,omitempty"`
 	CustomCache CustomCache     `json:"customCache,omitempty"`
 	BigCache    bigcache.Config `json:"bigCache,omitempty"`
+	GoogleDrive GoogleDrive     `json:"googleDrive,omitempty"`
+	CustomFile  CustomFile      `json:"customFile,omitempty"`
 }
 
 // LIKE model for SQL-LIKE connection config
@@ -48,6 +51,20 @@ type CustomCache struct {
 	CacheSize        int64         `json:"cacheSize,omitempty"` // byte
 	CleaningEnable   bool          `json:"cleaningEnable,omitempty"`
 	CleaningInterval time.Duration `json:"cleaningInterval,omitempty"` // nanosecond
+}
+
+// GoogleDrive config model
+type GoogleDrive struct {
+	PoolSize     int    `json:"poolSize"`
+	ByHTTPClient bool   `json:"byHTTPClient,omitempty"`
+	Token        string `json:"token,omitempty"`
+	Credential   string `json:"credential,omitempty"`
+}
+
+// CustomFile config model
+type CustomFile struct {
+	PoolSize             int    `json:"poolSize"`
+	RootServiceDirectory string `json:"rootDirectory"`
 }
 
 // End Database Connection Models //
@@ -118,6 +135,20 @@ const (
 type customCacheItem struct {
 	data    interface{}
 	expires int64
+}
+
+// End Caching Models //
+// -------------------------------------------------------------------------
+// Begin File Models //
+
+// GoogleFileListModel for unmarshal object has interface type
+type GoogleFileListModel struct {
+	drive.FileList
+}
+
+// GoogleFileModel for unmarshal object has interface type
+type GoogleFileModel struct {
+	drive.File
 }
 
 // End Caching Models //

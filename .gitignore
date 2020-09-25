@@ -14,3 +14,6 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 /.idea
+examples/file/credentials.json
+examples/file/token.json
+examples/file/test.txt

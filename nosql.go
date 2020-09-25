@@ -41,8 +41,10 @@ type INoSQL interface {
 		dataModel reflect.Type) (results interface{}, err error)
 }
 
+/*
+	@MONGODB: MongoDB
+*/
 const (
-	// MONGODB database
 	MONGODB = iota
 )
 
