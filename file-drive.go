@@ -141,7 +141,7 @@ func saveToken(path string, token *oauth2.Token) {
 
 // List all files based on pageSize
 func (dr *DriveServices) List(pageSize int64, pageToken ...string) (interface{}, error) {
-	var fields googleapi.Field = "nextPageToken, files(id, name, fileExtension, mimeType)"
+	var fields googleapi.Field = "nextPageToken, files(id, name, fileExtension, mimeType, parents)"
 
 	if len(pageToken) == 0 {
 		return dr.driveService.Files.List().PageSize(pageSize).Fields(fields).Do()
@@ -150,14 +150,9 @@ func (dr *DriveServices) List(pageSize int64, pageToken ...string) (interface{},
 	return dr.driveService.Files.List().PageToken(pageToken[0]).PageSize(pageSize).Fields(fields).Do()
 }
 
-// Upload a file to drive
-func (dr *DriveServices) Upload(name string, fileContent io.Reader, parents ...string) (interface{}, error) {
-	f := &drive.File{
-		Name:    name, //should specify a file extension in the name, like Name: "cat.jpg"
-		Parents: parents,
-	}
-
-	return dr.driveService.Files.Create(f).Media(fileContent).Do()
+// GetMetaData from a file based on fileID
+func (dr *DriveServices) GetMetaData(fileID string) (interface{}, error) {
+	return dr.driveService.Files.Get(fileID).Do()
 }
 
 // CreateFolder on drive
@@ -171,23 +166,38 @@ func (dr *DriveServices) CreateFolder(name string, parents ...string) (interface
 	return dr.driveService.Files.Create(f).Do()
 }
 
+// Upload a file to drive
+func (dr *DriveServices) Upload(name string, fileContent io.Reader, parents ...string) (interface{}, error) {
+	f := &drive.File{
+		Name:    name, //should specify a file extension in the name, like Name: "cat.jpg"
+		Parents: parents,
+	}
+
+	return dr.driveService.Files.Create(f).Media(fileContent).Do()
+}
+
 // Download a file based on fileID
-func (dr *DriveServices) Download(fileModel interface{}) (interface{}, error) {
-	return dr.driveService.Files.Get(fileModel.(*drive.File).Id).Download()
+func (dr *DriveServices) Download(fileID string) (interface{}, error) {
+	return dr.driveService.Files.Get(fileID).Download()
 }
 
-// Move a file to new location based on fileID
-func (dr *DriveServices) Move(oldParentID, newParentID string, fileModel interface{}) (interface{}, error) {
-	return dr.driveService.Files.Update(fileModel.(*drive.File).Id, fileModel.(*drive.File)).RemoveParents(oldParentID).AddParents(newParentID).Do()
+// Move a file to new location based on fileID, oldParentID, newParentID
+func (dr *DriveServices) Move(fileID, oldParentID, newParentID string) (interface{}, error) {
+	if _, err := dr.driveService.Files.Update(fileID, nil).RemoveParents(oldParentID).Do(); err != nil {
+		return nil, err
+	}
+
+	return dr.driveService.Files.Update(fileID, nil).AddParents(newParentID).Do()
 }
 
-// Delete a file/folder base on IDs
+// Delete a file/folder based on IDs
 func (dr *DriveServices) Delete(fileIDs []string) error {
 	var mu sync.Mutex
 	var errs *multierror.Error
 	dwp := workerpool.New(dr.config.PoolSize)
 
 	for _, fileID := range fileIDs {
+		fileID := fileID
 		dwp.Submit(func() {
 			if err := dr.driveService.Files.Delete(fileID).Do(); err != nil {
 				mu.Lock()
