@@ -5,7 +5,7 @@ go 1.13
 require (
 	cloud.google.com/go v0.66.0 // indirect
 	github.com/allegro/bigcache/v2 v2.2.4
-	github.com/aws/aws-sdk-go v1.34.30 // indirect
+	github.com/aws/aws-sdk-go v1.34.31 // indirect
 	github.com/gammazero/deque v0.0.0-20200721202602-07291166fe33 // indirect
 	github.com/gammazero/workerpool v1.0.0
 	github.com/go-redis/redis v6.15.9+incompatible
@@ -23,11 +23,11 @@ require (
 	github.com/tidwall/pretty v1.0.2 // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.4.1
-	golang.org/x/net v0.0.0-20200923182212-328152dc79b1 // indirect
+	golang.org/x/net v0.0.0-20200925080053-05aa5d4ee321 // indirect
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/sys v0.0.0-20200923182605-d9f96fdee20d // indirect
 	google.golang.org/api v0.32.0
-	google.golang.org/genproto v0.0.0-20200923140941-5646d36feee1 // indirect
+	google.golang.org/genproto v0.0.0-20200925023002-c2d885f95484 // indirect
 	google.golang.org/grpc v1.32.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200902074654-038fdea0a05b // indirect
 )

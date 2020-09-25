@@ -9,7 +9,6 @@ import (
 	"github.com/gammazero/workerpool"
 	"github.com/golang-common-packages/hash"
 	multierror "github.com/hashicorp/go-multierror"
-	"golang.org/x/tools/go/analysis/passes/nilfunc"
 )
 
 // CustomFileClient manage all custom file action
