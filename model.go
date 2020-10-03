@@ -11,13 +11,13 @@ import (
 
 // Config model for database config
 type Config struct {
-	LIKE        LIKE            `json:"like,omitempty"`
-	MongoDB     MongoDB         `json:"mongodb,omitempty"`
-	Redis       Redis           `json:"redis,omitempty"`
-	CustomCache CustomCache     `json:"customCache,omitempty"`
-	BigCache    bigcache.Config `json:"bigCache,omitempty"`
-	GoogleDrive GoogleDrive     `json:"googleDrive,omitempty"`
-	CustomFile  CustomFile      `json:"customFile,omitempty"`
+	LIKE           LIKE            `json:"like,omitempty"`
+	MongoDB        MongoDB         `json:"mongodb,omitempty"`
+	Redis          Redis           `json:"redis,omitempty"`
+	CustomKeyValue CustomKeyValue  `json:"customKeyValue,omitempty"`
+	BigCache       bigcache.Config `json:"bigCache,omitempty"`
+	GoogleDrive    GoogleDrive     `json:"googleDrive,omitempty"`
+	CustomFile     CustomFile      `json:"customFile,omitempty"`
 }
 
 // LIKE model for SQL-LIKE connection config
@@ -40,25 +40,25 @@ type MongoDB struct {
 
 // Redis model for redis config
 type Redis struct {
-	Password   string `json:"password,omitempty"`
-	Host       string `json:"host,omitempty"`
-	DB         int    `json:"db,omitempty"`
-	MaxRetries int    `json:"maxRetries,omitempty"`
+	Password   string `json:"password"`
+	Host       string `json:"host"`
+	DB         int    `json:"db"`
+	MaxRetries int    `json:"maxRetries"`
 }
 
-// CustomCache config model
-type CustomCache struct {
-	CacheSize        int64         `json:"cacheSize,omitempty"` // byte
-	CleaningEnable   bool          `json:"cleaningEnable,omitempty"`
-	CleaningInterval time.Duration `json:"cleaningInterval,omitempty"` // nanosecond
+// CustomKeyValue config model
+type CustomKeyValue struct {
+	MemorySize       int64         `json:"memorySize"` // byte
+	CleaningEnable   bool          `json:"cleaningEnable"`
+	CleaningInterval time.Duration `json:"cleaningInterval"` // nanosecond
 }
 
 // GoogleDrive config model
 type GoogleDrive struct {
 	PoolSize     int    `json:"poolSize"`
-	ByHTTPClient bool   `json:"byHTTPClient,omitempty"`
-	Token        string `json:"token,omitempty"`
-	Credential   string `json:"credential,omitempty"`
+	ByHTTPClient bool   `json:"byHTTPClient"`
+	Token        string `json:"token"`
+	Credential   string `json:"credential"`
 }
 
 // CustomFile config model
@@ -68,77 +68,21 @@ type CustomFile struct {
 }
 
 // End Database Connection Models //
+
 // -------------------------------------------------------------------------
-// Begin NoSQL Models //
 
-// MatchLookup mongo model
-type MatchLookup struct {
-	Match  []Match  `json:"match"`
-	Lookup []Lookup `json:"lookup"`
-}
-
-// Match mongo model
-type Match struct {
-	Field    string              `json:"field"`
-	Operator ComparisonOperators `json:"operator"`
-	Value    string              `json:"value"`
-}
-
-// Lookup mongo model
-type Lookup struct {
-	From         string `json:"From"`
-	LocalField   string `json:"localField"`
-	ForeignField string `json:"foreignField"`
-	As           string `json:"as"`
-}
-
-// Set mongo model
-type Set struct {
-	Operator UpdateOperators `json:"operator"`
-	Data     interface{}     `json:"data"`
-}
-
-///// MongoDB operator model /////
-
-// ComparisonOperators mongodb comparition operation type
-type ComparisonOperators string
-
-/*
-This is for mongodb comparition operation constant
-*/
-const (
-	Equal                ComparisonOperators = "$eq"
-	EqualAny             ComparisonOperators = "$in"
-	NotEqual             ComparisonOperators = "$ne"
-	NotEqualAnyLL        ComparisonOperators = "$nin"
-	GreaterThan          ComparisonOperators = "$gt"
-	GreaterThanOrEqualTo ComparisonOperators = "$gte"
-	LessThan             ComparisonOperators = "$lt"
-	LessThanOrEqualTo    ComparisonOperators = "$lte"
-)
-
-// UpdateOperators mongodb update operation type
-type UpdateOperators string
-
-/*
-This is for mongodb update operation constant
-*/
-const (
-	Replaces UpdateOperators = "$set"
-)
-
-// End NoSQL Models //
-// -------------------------------------------------------------------------
 // Begin Caching Models //
 
-// customCacheItem private model for custom cache record
-type customCacheItem struct {
+// customKeyValueItem private model for custom key-value record
+type customKeyValueItem struct {
 	data    interface{}
 	expires int64
 }
 
 // End Caching Models //
+
 // -------------------------------------------------------------------------
+
 // Begin File Models //
 
 // GoogleFileListModel for unmarshal object has interface type
@@ -152,4 +96,3 @@ type GoogleFileModel struct {
 }
 
 // End Caching Models //
-// -------------------------------------------------------------------------

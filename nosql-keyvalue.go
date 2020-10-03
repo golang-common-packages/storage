@@ -8,8 +8,8 @@ import (
 	"github.com/golang-common-packages/hash"
 )
 
-// ICaching caching factory pattern interface
-type ICaching interface {
+// INoSQLKeyValue factory pattern interface
+type INoSQLKeyValue interface {
 	Middleware(hash hash.IHash) echo.MiddlewareFunc
 	Get(key string) (interface{}, error)
 	Set(key string, value interface{}, expire time.Duration) error
@@ -29,11 +29,11 @@ const (
 	REDIS
 )
 
-// NewCaching factory pattern
-func NewCaching(databaseCompany int, config *Config) interface{} {
+// NewNoSQLKeyValue factory pattern
+func NewNoSQLKeyValue(databaseCompany int, config *Config) interface{} {
 	switch databaseCompany {
 	case CUSTOM:
-		return NewCustomCaching(&config.CustomCache)
+		return NewKeyValueCustom(&config.CustomKeyValue)
 	case REDIS:
 		return NewRedis(&config.Redis)
 	case BIGCACHE:

@@ -24,11 +24,11 @@ var (
 )
 
 // NewRedis init new instance
-func NewRedis(config *Redis) ICaching {
+func NewRedis(config *Redis) INoSQLKeyValue {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
-		panic(err)
+		log.Fatalln("Unable to marshal Redis configuration: ", err)
 	}
 	configAsString := hasher.SHA1(string(configAsJSON))
 
@@ -37,18 +37,17 @@ func NewRedis(config *Redis) ICaching {
 		currentRedisClientSession = &RedisClient{nil}
 		client, err := currentRedisClientSession.connect(config)
 		if err != nil {
-			panic(err)
+			log.Fatalln("Unable to connect to Redis: ", err)
 		} else {
 			currentRedisClientSession.Client = client
 			redisClientSessionMapping[configAsString] = currentRedisClientSession
-			log.Println("Connected to Redis Server")
+			log.Println("Connected to Redis")
 		}
 	}
 
 	return currentRedisClientSession
 }
 
-// connect private method establish redis connection
 func (r *RedisClient) connect(data *Redis) (client *redis.Client, err error) {
 	if r.Client == nil {
 		client = redis.NewClient(&redis.Options{
@@ -60,7 +59,7 @@ func (r *RedisClient) connect(data *Redis) (client *redis.Client, err error) {
 
 		_, err := client.Ping().Result()
 		if err != nil {
-			log.Println("Connect to redis fail: ", err)
+			log.Fatalln("Unable to connect to Redis: ", err)
 			return nil, err
 		}
 	} else {
@@ -78,8 +77,8 @@ func (r *RedisClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
 			key := hash.SHA512(token)
 
 			if val, err := r.Get(key); err != nil {
-				log.Printf("Can not get accesstoken from redis in echo middleware: %s", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				log.Println("Can not get accesstoken from redis in echo middleware: ", err)
+				return echo.NewHTTPError(http.StatusInternalServerError, err)
 			} else if val == "" {
 				return c.NoContent(http.StatusUnauthorized)
 			}
@@ -103,6 +102,7 @@ func (r *RedisClient) Set(key string, value interface{}, expire time.Duration) e
 func (r *RedisClient) Update(key string, value interface{}, expire time.Duration) error {
 	_, err := r.Client.Get(key).Result()
 	if err != nil {
+		log.Println("Unable to get value: ", err)
 		return err
 	}
 
@@ -113,7 +113,8 @@ func (r *RedisClient) Update(key string, value interface{}, expire time.Duration
 func (r *RedisClient) Append(key string, value interface{}) error {
 	b, err := json.Marshal(value)
 	if err != nil {
-		return errors.New("can not marshal value to []byte")
+		log.Println("Unable to marshal value: ", err)
+		return errors.New("can not marshal value")
 	}
 
 	var v string

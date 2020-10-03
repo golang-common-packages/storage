@@ -13,31 +13,31 @@ import (
 	"github.com/golang-common-packages/linear"
 )
 
-// CustomCachingClient manage all custom caching actions
-type CustomCachingClient struct {
+// KeyValueCustomClient manage all custom caching actions
+type KeyValueCustomClient struct {
 	client *linear.Client
 	close  chan struct{}
 }
 
 var (
-	// customClientSessionMapping singleton pattern
-	customClientSessionMapping = make(map[string]*CustomCachingClient)
+	// keyValueCustomClientSessionMapping singleton pattern
+	keyValueCustomClientSessionMapping = make(map[string]*KeyValueCustomClient)
 )
 
-// NewCustomCaching init new instance
-func NewCustomCaching(config *CustomCache) ICaching {
+// NewKeyValueCustom init new instance
+func NewKeyValueCustom(config *CustomKeyValue) INoSQLKeyValue {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
-		panic(err)
+		log.Fatalln("Unable to marshal service configuration: ", err)
 	}
 	configAsString := hasher.SHA1(string(configAsJSON))
 
-	currentCustomClientSession := customClientSessionMapping[configAsString]
+	currentCustomClientSession := keyValueCustomClientSessionMapping[configAsString]
 	if currentCustomClientSession == nil {
-		currentCustomClientSession = &CustomCachingClient{linear.New(config.CacheSize, config.CleaningEnable), make(chan struct{})}
-		customClientSessionMapping[configAsString] = currentCustomClientSession
-		log.Println("Custom caching is ready")
+		currentCustomClientSession = &KeyValueCustomClient{linear.New(config.MemorySize, config.CleaningEnable), make(chan struct{})}
+		keyValueCustomClientSessionMapping[configAsString] = currentCustomClientSession
+		log.Println("Key-value custom is ready")
 
 		// Check record expiration time and remove
 		go func() {
@@ -49,7 +49,7 @@ func NewCustomCaching(config *CustomCache) ICaching {
 				case <-ticker.C:
 					items := currentCustomClientSession.client.GetItems()
 					items.Range(func(key, value interface{}) bool {
-						item := value.(customCacheItem)
+						item := value.(customKeyValueItem)
 
 						if item.expires < time.Now().UnixNano() {
 							k, _ := key.(string)
@@ -70,15 +70,15 @@ func NewCustomCaching(config *CustomCache) ICaching {
 }
 
 // Middleware for echo framework
-func (cl *CustomCachingClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
+func (cl *KeyValueCustomClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			token := c.Request().Header.Get(echo.HeaderAuthorization)
 			key := hash.SHA512(token)
 
 			if val, err := cl.Get(key); err != nil {
-				log.Printf("Can not get accesstoken from custom caching in echo middleware: %s", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				log.Println("Unable to get value: ", err)
+				return echo.NewHTTPError(http.StatusInternalServerError, err)
 			} else if val == "" {
 				return c.NoContent(http.StatusUnauthorized)
 			}
@@ -89,9 +89,9 @@ func (cl *CustomCachingClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
 }
 
 // Get return value based on the key provided
-func (cl *CustomCachingClient) Get(key string) (interface{}, error) {
+func (cl *KeyValueCustomClient) Get(key string) (interface{}, error) {
 	if key == "" {
-		return nil, errors.New("key must not empty")
+		return nil, errors.New("Key cannot be empty")
 	}
 
 	obj, err := cl.client.Read(key)
@@ -99,9 +99,9 @@ func (cl *CustomCachingClient) Get(key string) (interface{}, error) {
 		return nil, err
 	}
 
-	item, ok := obj.(customCacheItem)
+	item, ok := obj.(customKeyValueItem)
 	if !ok {
-		return nil, errors.New("can not map object to customCacheItem model")
+		return nil, errors.New("Unable to map object to customKeyValueItem model")
 	}
 
 	if item.expires < time.Now().UnixNano() {
@@ -112,9 +112,9 @@ func (cl *CustomCachingClient) Get(key string) (interface{}, error) {
 }
 
 // GetMany return value based on the list of keys provided
-func (cl *CustomCachingClient) GetMany(keys []string) (map[string]interface{}, []string, error) {
+func (cl *KeyValueCustomClient) GetMany(keys []string) (map[string]interface{}, []string, error) {
 	if len(keys) == 0 {
-		return nil, nil, errors.New("keys must not empty")
+		return nil, nil, errors.New("Keys cannot be empty")
 	}
 
 	var itemFound map[string]interface{}
@@ -126,9 +126,9 @@ func (cl *CustomCachingClient) GetMany(keys []string) (map[string]interface{}, [
 			itemNotFound = append(itemNotFound, key)
 		}
 
-		item, ok := obj.(customCacheItem)
+		item, ok := obj.(customKeyValueItem)
 		if !ok {
-			return nil, nil, errors.New("can not map object to customCacheItem model")
+			return nil, nil, errors.New("Unable to map object to customKeyValueItem model")
 		}
 
 		itemFound[key] = item.data
@@ -138,19 +138,20 @@ func (cl *CustomCachingClient) GetMany(keys []string) (map[string]interface{}, [
 }
 
 // Set new record set key and value
-func (cl *CustomCachingClient) Set(key string, value interface{}, expire time.Duration) error {
+func (cl *KeyValueCustomClient) Set(key string, value interface{}, expire time.Duration) error {
 	if key == "" || value == nil {
-		return errors.New("key and value must not empty")
+		return errors.New("Key and value cannot be left blank")
 	}
 
 	if expire == 0 {
 		expire = 24 * time.Hour
 	}
 
-	if err := cl.client.Push(key, customCacheItem{
+	if err := cl.client.Push(key, customKeyValueItem{
 		data:    value,
 		expires: time.Now().Add(expire).UnixNano(),
 	}); err != nil {
+		log.Println("Unable to push data: ", err)
 		return err
 	}
 
@@ -158,9 +159,9 @@ func (cl *CustomCachingClient) Set(key string, value interface{}, expire time.Du
 }
 
 // Update new value over the key provided
-func (cl *CustomCachingClient) Update(key string, value interface{}, expire time.Duration) error {
+func (cl *KeyValueCustomClient) Update(key string, value interface{}, expire time.Duration) error {
 	if key == "" || value == nil {
-		return errors.New("key and value must not empty")
+		return errors.New("Key and value cannot be left blank")
 	}
 
 	_, err := cl.client.Get(key)
@@ -172,23 +173,25 @@ func (cl *CustomCachingClient) Update(key string, value interface{}, expire time
 		expire = 24 * time.Hour
 	}
 
-	if err := cl.client.Push(key, customCacheItem{
+	if err := cl.client.Push(key, customKeyValueItem{
 		data:    value,
 		expires: time.Now().Add(expire).UnixNano(),
 	}); err != nil {
+		log.Println("Unable to push data: ", err)
 		return err
 	}
 
 	return nil
 }
 
-// Delete deletes the key and its value from the cache.
-func (cl *CustomCachingClient) Delete(key string) error {
+// Delete deletes the key and its value from the memory
+func (cl *KeyValueCustomClient) Delete(key string) error {
 	if key == "" {
-		return errors.New("key must not empty")
+		return errors.New("Key cannot be empty")
 	}
 
 	if _, err := cl.client.Get(key); err != nil {
+		log.Println("Unable to get value: ", err)
 		return err
 	}
 
@@ -196,9 +199,9 @@ func (cl *CustomCachingClient) Delete(key string) error {
 }
 
 // Range over linear data structure
-func (cl *CustomCachingClient) Range(f func(key, value interface{}) bool) {
+func (cl *KeyValueCustomClient) Range(f func(key, value interface{}) bool) {
 	fn := func(key, value interface{}) bool {
-		item := value.(customCacheItem)
+		item := value.(customKeyValueItem)
 
 		if item.expires > 0 && item.expires < time.Now().UnixNano() {
 			return true
@@ -211,17 +214,17 @@ func (cl *CustomCachingClient) Range(f func(key, value interface{}) bool) {
 }
 
 // GetNumberOfRecords return number of records
-func (cl *CustomCachingClient) GetNumberOfRecords() int {
+func (cl *KeyValueCustomClient) GetNumberOfRecords() int {
 	return cl.client.GetNumberOfKeys()
 }
 
 // GetCapacity method return redis database size
-func (cl *CustomCachingClient) GetCapacity() (interface{}, error) {
+func (cl *KeyValueCustomClient) GetCapacity() (interface{}, error) {
 	return cl.client.GetLinearCurrentSize(), nil
 }
 
-// Close closes the cache and frees up resources.
-func (cl *CustomCachingClient) Close() error {
+// Close the service and frees up resources.
+func (cl *KeyValueCustomClient) Close() error {
 	cl.close <- struct{}{}
 
 	return nil
