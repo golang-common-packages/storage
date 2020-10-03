@@ -33,7 +33,7 @@ const (
 func NewNoSQLKeyValue(databaseCompany int, config *Config) interface{} {
 	switch databaseCompany {
 	case CUSTOM:
-		return NewNoSQLKeyvalueCustom(&config.CustomCache)
+		return NewKeyValueCustom(&config.CustomKeyValue)
 	case REDIS:
 		return NewRedis(&config.Redis)
 	case BIGCACHE:

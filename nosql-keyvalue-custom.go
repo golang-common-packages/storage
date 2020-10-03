@@ -24,8 +24,8 @@ var (
 	keyValueCustomClientSessionMapping = make(map[string]*KeyValueCustomClient)
 )
 
-// NewNoSQLKeyvalueCustom init new instance
-func NewNoSQLKeyvalueCustom(config *CustomCache) INoSQLKeyValue {
+// NewKeyValueCustom init new instance
+func NewKeyValueCustom(config *CustomKeyValue) INoSQLKeyValue {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
@@ -35,7 +35,7 @@ func NewNoSQLKeyvalueCustom(config *CustomCache) INoSQLKeyValue {
 
 	currentCustomClientSession := keyValueCustomClientSessionMapping[configAsString]
 	if currentCustomClientSession == nil {
-		currentCustomClientSession = &KeyValueCustomClient{linear.New(config.CacheSize, config.CleaningEnable), make(chan struct{})}
+		currentCustomClientSession = &KeyValueCustomClient{linear.New(config.MemorySize, config.CleaningEnable), make(chan struct{})}
 		keyValueCustomClientSessionMapping[configAsString] = currentCustomClientSession
 		log.Println("Custom caching is ready")
 
@@ -49,7 +49,7 @@ func NewNoSQLKeyvalueCustom(config *CustomCache) INoSQLKeyValue {
 				case <-ticker.C:
 					items := currentCustomClientSession.client.GetItems()
 					items.Range(func(key, value interface{}) bool {
-						item := value.(customCacheItem)
+						item := value.(customKeyValueItem)
 
 						if item.expires < time.Now().UnixNano() {
 							k, _ := key.(string)
@@ -99,9 +99,9 @@ func (cl *KeyValueCustomClient) Get(key string) (interface{}, error) {
 		return nil, err
 	}
 
-	item, ok := obj.(customCacheItem)
+	item, ok := obj.(customKeyValueItem)
 	if !ok {
-		return nil, errors.New("can not map object to customCacheItem model")
+		return nil, errors.New("can not map object to customKeyValueItem model")
 	}
 
 	if item.expires < time.Now().UnixNano() {
@@ -126,9 +126,9 @@ func (cl *KeyValueCustomClient) GetMany(keys []string) (map[string]interface{}, 
 			itemNotFound = append(itemNotFound, key)
 		}
 
-		item, ok := obj.(customCacheItem)
+		item, ok := obj.(customKeyValueItem)
 		if !ok {
-			return nil, nil, errors.New("can not map object to customCacheItem model")
+			return nil, nil, errors.New("can not map object to customKeyValueItem model")
 		}
 
 		itemFound[key] = item.data
@@ -147,7 +147,7 @@ func (cl *KeyValueCustomClient) Set(key string, value interface{}, expire time.D
 		expire = 24 * time.Hour
 	}
 
-	if err := cl.client.Push(key, customCacheItem{
+	if err := cl.client.Push(key, customKeyValueItem{
 		data:    value,
 		expires: time.Now().Add(expire).UnixNano(),
 	}); err != nil {
@@ -172,7 +172,7 @@ func (cl *KeyValueCustomClient) Update(key string, value interface{}, expire tim
 		expire = 24 * time.Hour
 	}
 
-	if err := cl.client.Push(key, customCacheItem{
+	if err := cl.client.Push(key, customKeyValueItem{
 		data:    value,
 		expires: time.Now().Add(expire).UnixNano(),
 	}); err != nil {
@@ -182,7 +182,7 @@ func (cl *KeyValueCustomClient) Update(key string, value interface{}, expire tim
 	return nil
 }
 
-// Delete deletes the key and its value from the cache.
+// Delete deletes the key and its value from the memory
 func (cl *KeyValueCustomClient) Delete(key string) error {
 	if key == "" {
 		return errors.New("key must not empty")
@@ -198,7 +198,7 @@ func (cl *KeyValueCustomClient) Delete(key string) error {
 // Range over linear data structure
 func (cl *KeyValueCustomClient) Range(f func(key, value interface{}) bool) {
 	fn := func(key, value interface{}) bool {
-		item := value.(customCacheItem)
+		item := value.(customKeyValueItem)
 
 		if item.expires > 0 && item.expires < time.Now().UnixNano() {
 			return true
@@ -220,7 +220,7 @@ func (cl *KeyValueCustomClient) GetCapacity() (interface{}, error) {
 	return cl.client.GetLinearCurrentSize(), nil
 }
 
-// Close closes the cache and frees up resources.
+// Close the service and frees up resources.
 func (cl *KeyValueCustomClient) Close() error {
 	cl.close <- struct{}{}
 
