@@ -11,8 +11,8 @@ import (
 
 // Config model for database config
 type Config struct {
-	LIKE        LIKE            `json:"like"`
-	MongoDB     MongoDB         `json:"mongodb"`
+	LIKE        LIKE            `json:"like,omitempty"`
+	MongoDB     MongoDB         `json:"mongodb,omitempty"`
 	Redis       Redis           `json:"redis,omitempty"`
 	CustomCache CustomCache     `json:"customCache,omitempty"`
 	BigCache    bigcache.Config `json:"bigCache,omitempty"`
