@@ -15,8 +15,8 @@ const (
 	MONGODB = iota
 )
 
-// NewNoSQL init instance by factory pattern
-func NewNoSQL(databaseCompany int, config *Config) interface{} {
+// NewNoSQLDocument init instance by factory pattern
+func NewNoSQLDocument(databaseCompany int, config *Config) interface{} {
 
 	switch databaseCompany {
 	case MONGODB:

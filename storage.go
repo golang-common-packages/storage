@@ -2,16 +2,14 @@ package storage
 
 import "context"
 
-/*
-	@SQL: SQL database
-	@NOSQL: NoSQL database
-	@CACHING: Caching database
-	@FILE: File service
-*/
 const (
+	// SQL type
 	SQL = iota
-	NOSQL
+	// NOSQLDOCUMENT is NoSQL document type
+	NOSQLDOCUMENT
+	// CACHING type
 	CACHING
+	// FILE type
 	FILE
 )
 
@@ -24,8 +22,8 @@ func New(databaseType int) func(databaseCompany int, config *Config) interface{}
 	switch databaseType {
 	case SQL:
 		return NewSQL
-	case NOSQL:
-		return NewNoSQL
+	case NOSQLDOCUMENT:
+		return NewNoSQLDocument
 	case CACHING:
 		return NewCaching
 	case FILE:
