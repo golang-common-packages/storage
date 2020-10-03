@@ -97,8 +97,33 @@ func (m *MongoClient) createSession() (session mongo.Session) {
 	return session
 }
 
-// Find documents from collection based on filter
-func (m *MongoClient) Find(databaseName, collectionName string, filter interface{}, limit int64, dataModel reflect.Type) (interface{}, error) {
+// Create the list of document on collection
+func (m *MongoClient) Create(databaseName, collectionName string, documents []interface{}) (interface{}, error) {
+
+	var result interface{}
+	session := m.createSession()
+	defer session.EndSession(ctx)
+
+	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
+
+		collection := m.Client.Database(databaseName).Collection(collectionName)
+		result, err = collection.InsertMany(ctx, documents)
+		if err != nil {
+			log.Println("The insert method has an error: ", err)
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		log.Println("The insert sesstion has an error: ", err)
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// Read documents from collection based on filter
+func (m *MongoClient) Read(databaseName, collectionName string, filter interface{}, limit int64, dataModel reflect.Type) (interface{}, error) {
 
 	var results interface{}
 	session := m.createSession()
@@ -134,31 +159,6 @@ func (m *MongoClient) Find(databaseName, collectionName string, filter interface
 	}
 
 	return results, nil
-}
-
-// Insert the list of document to collection
-func (m *MongoClient) Insert(databaseName, collectionName string, documents []interface{}) (interface{}, error) {
-
-	var result interface{}
-	session := m.createSession()
-	defer session.EndSession(ctx)
-
-	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-
-		collection := m.Client.Database(databaseName).Collection(collectionName)
-		result, err = collection.InsertMany(ctx, documents)
-		if err != nil {
-			log.Println("The insert method has an error: ", err)
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		log.Println("The insert sesstion has an error: ", err)
-		return nil, err
-	}
-
-	return result, nil
 }
 
 // Update document with new value based on filter condition

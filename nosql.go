@@ -2,10 +2,10 @@ package storage
 
 import "reflect"
 
-// INoSQL factory pattern interface
+// INoSQL factory pattern CRUD interface
 type INoSQL interface {
-	Find(databaseName, collectionName string, filter interface{}, limit int64, dataModel reflect.Type) (interface{}, error)
-	Insert(databaseName, collectionName string, documents []interface{}) (interface{}, error)
+	Create(databaseName, collectionName string, documents []interface{}) (interface{}, error)
+	Read(databaseName, collectionName string, filter interface{}, limit int64, dataModel reflect.Type) (interface{}, error)
 	Update(databaseName, collectionName string, filter, update interface{}) (interface{}, error)
 	Delete(databaseName, collectionName string, filter interface{}) (interface{}, error)
 }
@@ -15,10 +15,8 @@ const (
 	MONGODB = iota
 )
 
-// NewNoSQL factory pattern
-func NewNoSQL(
-	databaseCompany int,
-	config *Config) interface{} {
+// NewNoSQL init instance by factory pattern
+func NewNoSQL(databaseCompany int, config *Config) interface{} {
 
 	switch databaseCompany {
 	case MONGODB:
