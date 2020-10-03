@@ -31,7 +31,7 @@ var (
 )
 
 // NewMongoDB init new instance
-func NewMongoDB(config *MongoDB) INoSQL {
+func NewMongoDB(config *MongoDB) INoSQLDocument {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {

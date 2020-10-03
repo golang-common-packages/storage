@@ -13,19 +13,19 @@ import (
 	"github.com/golang-common-packages/linear"
 )
 
-// CustomCachingClient manage all custom caching actions
-type CustomCachingClient struct {
+// KeyValueCustomClient manage all custom caching actions
+type KeyValueCustomClient struct {
 	client *linear.Client
 	close  chan struct{}
 }
 
 var (
-	// customClientSessionMapping singleton pattern
-	customClientSessionMapping = make(map[string]*CustomCachingClient)
+	// keyValueCustomClientSessionMapping singleton pattern
+	keyValueCustomClientSessionMapping = make(map[string]*KeyValueCustomClient)
 )
 
-// NewCustomCaching init new instance
-func NewCustomCaching(config *CustomCache) ICaching {
+// NewNoSQLKeyvalueCustom init new instance
+func NewNoSQLKeyvalueCustom(config *CustomCache) INoSQLKeyValue {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
@@ -33,10 +33,10 @@ func NewCustomCaching(config *CustomCache) ICaching {
 	}
 	configAsString := hasher.SHA1(string(configAsJSON))
 
-	currentCustomClientSession := customClientSessionMapping[configAsString]
+	currentCustomClientSession := keyValueCustomClientSessionMapping[configAsString]
 	if currentCustomClientSession == nil {
-		currentCustomClientSession = &CustomCachingClient{linear.New(config.CacheSize, config.CleaningEnable), make(chan struct{})}
-		customClientSessionMapping[configAsString] = currentCustomClientSession
+		currentCustomClientSession = &KeyValueCustomClient{linear.New(config.CacheSize, config.CleaningEnable), make(chan struct{})}
+		keyValueCustomClientSessionMapping[configAsString] = currentCustomClientSession
 		log.Println("Custom caching is ready")
 
 		// Check record expiration time and remove
@@ -70,7 +70,7 @@ func NewCustomCaching(config *CustomCache) ICaching {
 }
 
 // Middleware for echo framework
-func (cl *CustomCachingClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
+func (cl *KeyValueCustomClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			token := c.Request().Header.Get(echo.HeaderAuthorization)
@@ -89,7 +89,7 @@ func (cl *CustomCachingClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
 }
 
 // Get return value based on the key provided
-func (cl *CustomCachingClient) Get(key string) (interface{}, error) {
+func (cl *KeyValueCustomClient) Get(key string) (interface{}, error) {
 	if key == "" {
 		return nil, errors.New("key must not empty")
 	}
@@ -112,7 +112,7 @@ func (cl *CustomCachingClient) Get(key string) (interface{}, error) {
 }
 
 // GetMany return value based on the list of keys provided
-func (cl *CustomCachingClient) GetMany(keys []string) (map[string]interface{}, []string, error) {
+func (cl *KeyValueCustomClient) GetMany(keys []string) (map[string]interface{}, []string, error) {
 	if len(keys) == 0 {
 		return nil, nil, errors.New("keys must not empty")
 	}
@@ -138,7 +138,7 @@ func (cl *CustomCachingClient) GetMany(keys []string) (map[string]interface{}, [
 }
 
 // Set new record set key and value
-func (cl *CustomCachingClient) Set(key string, value interface{}, expire time.Duration) error {
+func (cl *KeyValueCustomClient) Set(key string, value interface{}, expire time.Duration) error {
 	if key == "" || value == nil {
 		return errors.New("key and value must not empty")
 	}
@@ -158,7 +158,7 @@ func (cl *CustomCachingClient) Set(key string, value interface{}, expire time.Du
 }
 
 // Update new value over the key provided
-func (cl *CustomCachingClient) Update(key string, value interface{}, expire time.Duration) error {
+func (cl *KeyValueCustomClient) Update(key string, value interface{}, expire time.Duration) error {
 	if key == "" || value == nil {
 		return errors.New("key and value must not empty")
 	}
@@ -183,7 +183,7 @@ func (cl *CustomCachingClient) Update(key string, value interface{}, expire time
 }
 
 // Delete deletes the key and its value from the cache.
-func (cl *CustomCachingClient) Delete(key string) error {
+func (cl *KeyValueCustomClient) Delete(key string) error {
 	if key == "" {
 		return errors.New("key must not empty")
 	}
@@ -196,7 +196,7 @@ func (cl *CustomCachingClient) Delete(key string) error {
 }
 
 // Range over linear data structure
-func (cl *CustomCachingClient) Range(f func(key, value interface{}) bool) {
+func (cl *KeyValueCustomClient) Range(f func(key, value interface{}) bool) {
 	fn := func(key, value interface{}) bool {
 		item := value.(customCacheItem)
 
@@ -211,17 +211,17 @@ func (cl *CustomCachingClient) Range(f func(key, value interface{}) bool) {
 }
 
 // GetNumberOfRecords return number of records
-func (cl *CustomCachingClient) GetNumberOfRecords() int {
+func (cl *KeyValueCustomClient) GetNumberOfRecords() int {
 	return cl.client.GetNumberOfKeys()
 }
 
 // GetCapacity method return redis database size
-func (cl *CustomCachingClient) GetCapacity() (interface{}, error) {
+func (cl *KeyValueCustomClient) GetCapacity() (interface{}, error) {
 	return cl.client.GetLinearCurrentSize(), nil
 }
 
 // Close closes the cache and frees up resources.
-func (cl *CustomCachingClient) Close() error {
+func (cl *KeyValueCustomClient) Close() error {
 	cl.close <- struct{}{}
 
 	return nil

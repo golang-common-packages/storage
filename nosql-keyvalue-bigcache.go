@@ -24,7 +24,7 @@ var (
 )
 
 // NewBigCache init new instance
-func NewBigCache(config *bigcache.Config) ICaching {
+func NewBigCache(config *bigcache.Config) INoSQLKeyValue {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {

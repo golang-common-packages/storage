@@ -25,7 +25,7 @@ func New(databaseType int) func(databaseCompany int, config *Config) interface{}
 	case NOSQLDOCUMENT:
 		return NewNoSQLDocument
 	case CACHING:
-		return NewCaching
+		return NewNoSQLKeyValue
 	case FILE:
 		return NewFile
 	default:

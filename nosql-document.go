@@ -2,8 +2,8 @@ package storage
 
 import "reflect"
 
-// INoSQL factory pattern CRUD interface
-type INoSQL interface {
+// INoSQLDocument factory pattern CRUD interface
+type INoSQLDocument interface {
 	Create(databaseName, collectionName string, documents []interface{}) (interface{}, error)
 	Read(databaseName, collectionName string, filter interface{}, limit int64, dataModel reflect.Type) (interface{}, error)
 	Update(databaseName, collectionName string, filter, update interface{}) (interface{}, error)

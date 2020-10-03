@@ -24,7 +24,7 @@ var (
 )
 
 // NewRedis init new instance
-func NewRedis(config *Redis) ICaching {
+func NewRedis(config *Redis) INoSQLKeyValue {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
