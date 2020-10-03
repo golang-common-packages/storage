@@ -29,7 +29,7 @@ func NewKeyValueCustom(config *CustomKeyValue) INoSQLKeyValue {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
-		panic(err)
+		log.Fatalln("Unable to marshal service configuration: ", err)
 	}
 	configAsString := hasher.SHA1(string(configAsJSON))
 
@@ -37,7 +37,7 @@ func NewKeyValueCustom(config *CustomKeyValue) INoSQLKeyValue {
 	if currentCustomClientSession == nil {
 		currentCustomClientSession = &KeyValueCustomClient{linear.New(config.MemorySize, config.CleaningEnable), make(chan struct{})}
 		keyValueCustomClientSessionMapping[configAsString] = currentCustomClientSession
-		log.Println("Custom caching is ready")
+		log.Println("Key-value custom is ready")
 
 		// Check record expiration time and remove
 		go func() {
@@ -77,8 +77,8 @@ func (cl *KeyValueCustomClient) Middleware(hash hash.IHash) echo.MiddlewareFunc 
 			key := hash.SHA512(token)
 
 			if val, err := cl.Get(key); err != nil {
-				log.Printf("Can not get accesstoken from custom caching in echo middleware: %s", err.Error())
-				return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+				log.Println("Unable to get value: ", err)
+				return echo.NewHTTPError(http.StatusInternalServerError, err)
 			} else if val == "" {
 				return c.NoContent(http.StatusUnauthorized)
 			}
@@ -91,7 +91,7 @@ func (cl *KeyValueCustomClient) Middleware(hash hash.IHash) echo.MiddlewareFunc 
 // Get return value based on the key provided
 func (cl *KeyValueCustomClient) Get(key string) (interface{}, error) {
 	if key == "" {
-		return nil, errors.New("key must not empty")
+		return nil, errors.New("Key cannot be empty")
 	}
 
 	obj, err := cl.client.Read(key)
@@ -101,7 +101,7 @@ func (cl *KeyValueCustomClient) Get(key string) (interface{}, error) {
 
 	item, ok := obj.(customKeyValueItem)
 	if !ok {
-		return nil, errors.New("can not map object to customKeyValueItem model")
+		return nil, errors.New("Unable to map object to customKeyValueItem model")
 	}
 
 	if item.expires < time.Now().UnixNano() {
@@ -114,7 +114,7 @@ func (cl *KeyValueCustomClient) Get(key string) (interface{}, error) {
 // GetMany return value based on the list of keys provided
 func (cl *KeyValueCustomClient) GetMany(keys []string) (map[string]interface{}, []string, error) {
 	if len(keys) == 0 {
-		return nil, nil, errors.New("keys must not empty")
+		return nil, nil, errors.New("Keys cannot be empty")
 	}
 
 	var itemFound map[string]interface{}
@@ -128,7 +128,7 @@ func (cl *KeyValueCustomClient) GetMany(keys []string) (map[string]interface{}, 
 
 		item, ok := obj.(customKeyValueItem)
 		if !ok {
-			return nil, nil, errors.New("can not map object to customKeyValueItem model")
+			return nil, nil, errors.New("Unable to map object to customKeyValueItem model")
 		}
 
 		itemFound[key] = item.data
@@ -140,7 +140,7 @@ func (cl *KeyValueCustomClient) GetMany(keys []string) (map[string]interface{}, 
 // Set new record set key and value
 func (cl *KeyValueCustomClient) Set(key string, value interface{}, expire time.Duration) error {
 	if key == "" || value == nil {
-		return errors.New("key and value must not empty")
+		return errors.New("Key and value cannot be left blank")
 	}
 
 	if expire == 0 {
@@ -151,6 +151,7 @@ func (cl *KeyValueCustomClient) Set(key string, value interface{}, expire time.D
 		data:    value,
 		expires: time.Now().Add(expire).UnixNano(),
 	}); err != nil {
+		log.Println("Unable to push data: ", err)
 		return err
 	}
 
@@ -160,7 +161,7 @@ func (cl *KeyValueCustomClient) Set(key string, value interface{}, expire time.D
 // Update new value over the key provided
 func (cl *KeyValueCustomClient) Update(key string, value interface{}, expire time.Duration) error {
 	if key == "" || value == nil {
-		return errors.New("key and value must not empty")
+		return errors.New("Key and value cannot be left blank")
 	}
 
 	_, err := cl.client.Get(key)
@@ -176,6 +177,7 @@ func (cl *KeyValueCustomClient) Update(key string, value interface{}, expire tim
 		data:    value,
 		expires: time.Now().Add(expire).UnixNano(),
 	}); err != nil {
+		log.Println("Unable to push data: ", err)
 		return err
 	}
 
@@ -185,10 +187,11 @@ func (cl *KeyValueCustomClient) Update(key string, value interface{}, expire tim
 // Delete deletes the key and its value from the memory
 func (cl *KeyValueCustomClient) Delete(key string) error {
 	if key == "" {
-		return errors.New("key must not empty")
+		return errors.New("Key cannot be empty")
 	}
 
 	if _, err := cl.client.Get(key); err != nil {
+		log.Println("Unable to get value: ", err)
 		return err
 	}
 

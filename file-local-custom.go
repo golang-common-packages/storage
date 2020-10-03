@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"os"
 	"sync"
 
@@ -26,7 +27,7 @@ func NewCustomFile(config *CustomFile) IFILE {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
-		panic(err)
+		log.Fatalln("Unable to marshal local custom file configuration: ", err)
 	}
 	configAsString := hasher.SHA1(string(configAsJSON))
 
@@ -34,6 +35,7 @@ func NewCustomFile(config *CustomFile) IFILE {
 	if currentCustomFileClientSession == nil {
 		currentCustomFileClientSession = &CustomFileClient{config: config}
 		customFileClientSessionMapping[configAsString] = currentCustomFileClientSession
+		log.Println("File custom is ready")
 	}
 
 	return currentCustomFileClientSession
@@ -43,11 +45,13 @@ func NewCustomFile(config *CustomFile) IFILE {
 func (cf *CustomFileClient) List(pageSize int64, pageToken ...string) (interface{}, error) {
 	f, err := os.Open(cf.config.RootServiceDirectory)
 	if err != nil {
+		log.Println("Unable to open root servie directory: ", err)
 		return nil, err
 	}
 	files, err := f.Readdir(-1)
 	defer f.Close()
 	if err != nil {
+		log.Println("Unable to read directory: ", err)
 		return nil, err
 	}
 
@@ -73,6 +77,7 @@ func (cf *CustomFileClient) Upload(name string, fileContent io.Reader, parents .
 	if os.IsNotExist(err) {
 		var file, err = os.Create(cf.config.RootServiceDirectory + name)
 		if err != nil {
+			log.Println("Unable to create file: ", err)
 			return nil, err
 		}
 		defer file.Close()
@@ -80,6 +85,7 @@ func (cf *CustomFileClient) Upload(name string, fileContent io.Reader, parents .
 		// Write content to file.
 		_, err = file.Write(streamToByte(fileContent))
 		if err != nil {
+			log.Println("Unable to write to file: ", err)
 			return nil, err
 		}
 	}
@@ -96,6 +102,7 @@ func (cf *CustomFileClient) Download(fileID string) (interface{}, error) {
 func (cf *CustomFileClient) Move(fileID, oldParentID, newParentID string) (interface{}, error) {
 	err := os.Rename(oldParentID+fileID, newParentID+fileID)
 	if err != nil {
+		log.Println("Unable to move file: ", err)
 		return nil, err
 	}
 	return nil, nil

@@ -27,7 +27,7 @@ func NewSQLLike(config *LIKE) *SQLLikeClient {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
-		panic(err)
+		log.Fatalln("Unable to marshal SQL-Like configuration: ", err)
 	}
 	configAsString := hasher.SHA1(string(configAsJSON))
 
@@ -37,8 +37,7 @@ func NewSQLLike(config *LIKE) *SQLLikeClient {
 
 		client, err := sql.Open(config.DriverName, config.DataSourceName)
 		if err != nil {
-			log.Println("Error when try to init SQL server: ", err)
-			panic(err)
+			log.Fatalln("Unable to connect to SQL-Like: ", err)
 		}
 
 		client.SetConnMaxLifetime(config.MaxConnectionLifetime)
@@ -46,14 +45,13 @@ func NewSQLLike(config *LIKE) *SQLLikeClient {
 		client.SetMaxOpenConns(config.MaxConnectionOpen)
 
 		if err := client.PingContext(context.TODO()); err != nil {
-			log.Println("Error when try to connect to SQL server: ", err)
-			panic(err)
+			log.Fatalln("Unable to ping to SQL-Like: ", err)
 		}
 
 		currentSQLLikeSession.Client = client
 		currentSQLLikeSession.Config = config
 		sqlLikeClientSessionMapping[configAsString] = currentSQLLikeSession
-		log.Println("Connected to SQL-Like Server")
+		log.Println("Connected to SQL-Like")
 	}
 
 	return currentSQLLikeSession
@@ -70,6 +68,7 @@ func (c *SQLLikeClient) Execute(
 
 	rows, err := c.Client.QueryContext(context.TODO(), query)
 	if err != nil {
+		log.Println("Unable to execute query: ", err)
 		return nil, err
 	}
 
@@ -77,14 +76,16 @@ func (c *SQLLikeClient) Execute(
 	for rows.Next() {
 		err = rows.Scan(&dataModel)
 		if err != nil {
+			log.Println("Unable to scan rows data: ", err)
 			return nil, err
 		}
 		results = append(results, dataModel)
 	}
-
-	// Check for errors during rows "Close"
-	// This may be more important if multiple statements are executed
-	// in a single batch and rows were written as well as read.
+	/*
+		Check for errors during rows "Close"
+		his may be more important if multiple statements are executed
+		in a single batch and rows were written as well as read.
+	*/
 	if err := rows.Close(); err != nil {
 		return nil, err
 	}

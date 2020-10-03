@@ -1,7 +1,7 @@
 package storage
 
-// ISQLRelation factory pattern interface
-type ISQLRelation interface {
+// ISQLRelational factory pattern interface
+type ISQLRelational interface {
 	Execute(query string, dataModel interface{}) (interface{}, error)
 }
 

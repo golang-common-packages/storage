@@ -28,7 +28,7 @@ func NewBigCache(config *bigcache.Config) INoSQLKeyValue {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
-		panic(err)
+		log.Fatalln("Unable to marshal BigCache configuration: ", err)
 	}
 	configAsString := hasher.SHA1(string(configAsJSON))
 
@@ -37,11 +37,11 @@ func NewBigCache(config *bigcache.Config) INoSQLKeyValue {
 		currentBigCacheClientSession = &BigCacheClient{nil}
 		client, err := bigcache.NewBigCache(*config)
 		if err != nil {
-			panic(err)
+			log.Fatalln("Unable to connect to BigCache: ", err)
 		} else {
 			currentBigCacheClientSession.Client = client
 			bigCacheClientSessionMapping[configAsString] = currentBigCacheClientSession
-			log.Println("Connected to BigCache Server")
+			log.Println("Connected to BigCache")
 		}
 	}
 
@@ -61,7 +61,6 @@ func (bc *BigCacheClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
 					return c.NoContent(http.StatusUnauthorized)
 				}
 
-				log.Printf("Can not get accesstoken from BigCache in echo middleware: %s", err.Error())
 				return c.NoContent(http.StatusInternalServerError)
 			} else if val == "" {
 				return c.NoContent(http.StatusUnauthorized)
@@ -76,7 +75,8 @@ func (bc *BigCacheClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
 func (bc *BigCacheClient) Set(key string, value interface{}, expire time.Duration) error {
 	b, err := json.Marshal(value)
 	if err != nil {
-		return errors.New("can not marshal value to []byte")
+		log.Println("Unable to marshal value to []byte: ", err)
+		return errors.New("Unable to marshal value")
 	}
 
 	return bc.Client.Set(key, b)
@@ -86,6 +86,7 @@ func (bc *BigCacheClient) Set(key string, value interface{}, expire time.Duratio
 func (bc *BigCacheClient) Get(key string) (interface{}, error) {
 	b, err := bc.Client.Get(key)
 	if err != nil {
+		log.Println("Unable to get value: ", err)
 		return nil, err
 	}
 
@@ -99,25 +100,30 @@ func (bc *BigCacheClient) Get(key string) (interface{}, error) {
 func (bc *BigCacheClient) Update(key string, value interface{}, expire time.Duration) error {
 	_, err := bc.Client.Get(key)
 	if err != nil {
+		log.Println("Unable to get value: ", err)
 		return err
 	}
 
 	if err := bc.Client.Delete(key); err != nil {
-		return nil
+		log.Println("Unable to delete value: ", err)
+		return err
 	}
 
-	if b, err := json.Marshal(value); err != nil {
-		return bc.Client.Set(key, b)
+	b, err := json.Marshal(value)
+	if err != nil {
+		log.Println("Unable to Marshal value: ", err)
+		return err
 	}
 
-	return nil
+	return bc.Client.Set(key, b)
 }
 
 // Append new value base on the key provide, With Append() you can concatenate multiple entries under the same key in an lock optimized way.
 func (bc *BigCacheClient) Append(key string, value interface{}) error {
 	b, err := json.Marshal(value)
 	if err != nil {
-		return errors.New("can not marshal value to []byte")
+		log.Println("Unable to Marshal value: ", err)
+		return errors.New("Unable to Marshal value")
 	}
 
 	return bc.Client.Append(key, b)

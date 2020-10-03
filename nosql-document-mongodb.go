@@ -35,7 +35,7 @@ func NewMongoDB(config *MongoDB) INoSQLDocument {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {
-		panic(err)
+		log.Fatalln("Unable to marshal MongoDB configuration: ", err)
 	}
 	configAsString := hasher.SHA1(string(configAsJSON))
 
@@ -47,23 +47,21 @@ func NewMongoDB(config *MongoDB) INoSQLDocument {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		client, err := mongo.Connect(ctx, options.Client().ApplyURI(getConnectionURI(config)))
 		if err != nil {
-			log.Println("Error when trying to connect to the MongoDB server: ", err)
 			cancel()
-			panic(err)
+			log.Fatalln("Unable to connect to MongoDB: ", err)
 		}
 
 		// Check the connection status
 		if err = client.Ping(ctx, readpref.Primary()); err != nil {
-			log.Println("Can not ping to MongoDB server: ", err)
 			cancel()
-			panic(err)
+			log.Fatalln("Unable to ping to MongoDB: ", err)
 		}
 
 		currentMongoSession.Client = client
 		currentMongoSession.Cancel = cancel
 		currentMongoSession.Config = config
 		mongoClientSessionMapping[configAsString] = currentMongoSession
-		log.Println("Connected to MongoDB Server")
+		log.Println("Connected to MongoDB")
 	}
 
 	return currentMongoSession
@@ -85,13 +83,11 @@ func getConnectionURI(config *MongoDB) (URI string) {
 func (m *MongoClient) createSession() (session mongo.Session) {
 	session, err := m.Client.StartSession()
 	if err != nil {
-		log.Println("Error when trying to init new session: ", err)
-		panic(err)
+		log.Fatalln("Unable to init new session: ", err)
 	}
 
 	if err := session.StartTransaction(); err != nil {
-		log.Println("Error when trying to start transaction: ", err)
-		panic(err)
+		log.Fatalln("Unable to start transaction: ", err)
 	}
 
 	return session
@@ -109,13 +105,13 @@ func (m *MongoClient) Create(databaseName, collectionName string, documents []in
 		collection := m.Client.Database(databaseName).Collection(collectionName)
 		result, err = collection.InsertMany(ctx, documents)
 		if err != nil {
-			log.Println("The insert method has an error: ", err)
+			log.Println("Unable to create document: ", err)
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		log.Println("The insert sesstion has an error: ", err)
+		log.Println("Unable to execute mongo session: ", err)
 		return nil, err
 	}
 
@@ -139,7 +135,7 @@ func (m *MongoClient) Read(databaseName, collectionName string, filter interface
 		cur, err := collection.Find(ctx, filter, findOptions)
 		defer cur.Close(ctx)
 		if err != nil {
-			log.Println("The find method has an error: ", err)
+			log.Println("Unable to read document: ", err)
 			return err
 		}
 
@@ -148,13 +144,13 @@ func (m *MongoClient) Read(databaseName, collectionName string, filter interface
 		results = reflect.New(dataModel).Interface()
 		err = cur.All(ctx, results)
 		if err != nil {
-			log.Println("The decode cursor method has an error: ", err)
+			log.Println("Unable to decode cursor: ", err)
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		log.Println("The find sesstion has an error: ", err)
+		log.Println("Unable to execute mongo session: ", err)
 		return nil, err
 	}
 
@@ -173,13 +169,13 @@ func (m *MongoClient) Update(databaseName, collectionName string, filter, update
 		collection := m.Client.Database(databaseName).Collection(collectionName)
 		result, err = collection.UpdateMany(ctx, filter, update)
 		if err != nil {
-			log.Println("The update method has an error: ", err)
+			log.Println("Unable to update: ", err)
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		log.Println("The update sesstion has an error: ", err)
+		log.Println("Unable to execute mongo session: ", err)
 		return nil, err
 	}
 
@@ -198,13 +194,13 @@ func (m *MongoClient) Delete(databaseName, collectionName string, filter interfa
 		collection := m.Client.Database(databaseName).Collection(collectionName)
 		result, err = collection.DeleteMany(ctx, filter)
 		if err != nil {
-			log.Println("The delete method has an error: ", err)
+			log.Println("Unable to delete: ", err)
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		log.Println("The delete sesstion has an error: ", err)
+		log.Println("Unable to execute mongo session: ", err)
 		return nil, err
 	}
 
