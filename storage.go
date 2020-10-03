@@ -3,13 +3,13 @@ package storage
 import "context"
 
 const (
-	// SQL type
-	SQL = iota
+	// SQLRELATIONAL is SQL relational type
+	SQLRELATIONAL = iota
 	// NOSQLDOCUMENT is NoSQL document type
 	NOSQLDOCUMENT
-	// CACHING type
-	CACHING
-	// FILE type
+	// NOSQLKEYVALUE is NoSQL key-value type
+	NOSQLKEYVALUE
+	// FILE is file management
 	FILE
 )
 
@@ -20,11 +20,11 @@ var (
 // New database by abstract factory pattern
 func New(databaseType int) func(databaseCompany int, config *Config) interface{} {
 	switch databaseType {
-	case SQL:
-		return NewSQL
+	case SQLRELATIONAL:
+		return NewSQLRelational
 	case NOSQLDOCUMENT:
 		return NewNoSQLDocument
-	case CACHING:
+	case NOSQLKEYVALUE:
 		return NewNoSQLKeyValue
 	case FILE:
 		return NewFile
