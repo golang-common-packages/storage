@@ -69,66 +69,6 @@ type CustomFile struct {
 
 // End Database Connection Models //
 // -------------------------------------------------------------------------
-// Begin NoSQL Models //
-
-// MatchLookup mongo model
-type MatchLookup struct {
-	Match  []Match  `json:"match"`
-	Lookup []Lookup `json:"lookup"`
-}
-
-// Match mongo model
-type Match struct {
-	Field    string              `json:"field"`
-	Operator ComparisonOperators `json:"operator"`
-	Value    string              `json:"value"`
-}
-
-// Lookup mongo model
-type Lookup struct {
-	From         string `json:"From"`
-	LocalField   string `json:"localField"`
-	ForeignField string `json:"foreignField"`
-	As           string `json:"as"`
-}
-
-// Set mongo model
-type Set struct {
-	Operator UpdateOperators `json:"operator"`
-	Data     interface{}     `json:"data"`
-}
-
-///// MongoDB operator model /////
-
-// ComparisonOperators mongodb comparition operation type
-type ComparisonOperators string
-
-/*
-This is for mongodb comparition operation constant
-*/
-const (
-	Equal                ComparisonOperators = "$eq"
-	EqualAny             ComparisonOperators = "$in"
-	NotEqual             ComparisonOperators = "$ne"
-	NotEqualAnyLL        ComparisonOperators = "$nin"
-	GreaterThan          ComparisonOperators = "$gt"
-	GreaterThanOrEqualTo ComparisonOperators = "$gte"
-	LessThan             ComparisonOperators = "$lt"
-	LessThanOrEqualTo    ComparisonOperators = "$lte"
-)
-
-// UpdateOperators mongodb update operation type
-type UpdateOperators string
-
-/*
-This is for mongodb update operation constant
-*/
-const (
-	Replaces UpdateOperators = "$set"
-)
-
-// End NoSQL Models //
-// -------------------------------------------------------------------------
 // Begin Caching Models //
 
 // customCacheItem private model for custom cache record

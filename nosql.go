@@ -4,47 +4,14 @@ import "reflect"
 
 // INoSQL factory pattern interface
 type INoSQL interface {
-	GetALL(
-		databaseName,
-		collectionName,
-		lastID,
-		pageSize string,
-		dataModel reflect.Type) (results interface{}, err error)
-
-	GetByField(
-		databaseName,
-		collectionName,
-		field,
-		value string,
-		dataModel reflect.Type) (interface{}, error)
-
-	Create(
-		databaseName,
-		collectionName string,
-		dataModel interface{}) (result interface{}, err error)
-
-	Update(
-		databaseName,
-		collectionName,
-		ID string,
-		dataModel interface{}) (result interface{}, err error)
-
-	Delete(
-		databaseName,
-		collectionName,
-		ID string) (result interface{}, err error)
-
-	MatchAndLookup(
-		databaseName,
-		collectionName string,
-		model MatchLookup,
-		dataModel reflect.Type) (results interface{}, err error)
+	Find(databaseName, collectionName string, filter interface{}, limit int64, dataModel reflect.Type) (interface{}, error)
+	Insert(databaseName, collectionName string, documents []interface{}) (interface{}, error)
+	Update(databaseName, collectionName string, filter, update interface{}) (interface{}, error)
+	Delete(databaseName, collectionName string, filter interface{}) (interface{}, error)
 }
 
-/*
-	@MONGODB: MongoDB
-*/
 const (
+	// MONGODB database
 	MONGODB = iota
 )
 
