@@ -15,7 +15,7 @@ import (
 
 // KeyValueCustomClient manage all custom caching actions
 type KeyValueCustomClient struct {
-	client *linear.Client
+	client *linear.Linear
 	close  chan struct{}
 }
 
