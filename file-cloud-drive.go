@@ -32,8 +32,8 @@ var (
 	driveClientSessionMapping = make(map[string]*DriveServices)
 )
 
-// NewDrive init new instance
-func NewDrive(config *GoogleDrive) IFILE {
+// newDrive init new instance
+func newDrive(config *GoogleDrive) IFILE {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {

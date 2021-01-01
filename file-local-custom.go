@@ -22,8 +22,8 @@ var (
 	customFileClientSessionMapping = make(map[string]*CustomFileClient)
 )
 
-// NewCustomFile init new instance
-func NewCustomFile(config *CustomFile) IFILE {
+// newCustomFile init new instance
+func newCustomFile(config *CustomFile) IFILE {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {

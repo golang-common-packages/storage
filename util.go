@@ -2,10 +2,21 @@ package storage
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"hash/fnv"
 	"io"
 )
+
+// SetContext set new context
+func SetContext(context context.Context) {
+	ctx = context
+}
+
+// GetContext return the current context
+func GetContext() context.Context {
+	return ctx
+}
 
 func generateKey(data string) string {
 	hash := fnv.New64a()

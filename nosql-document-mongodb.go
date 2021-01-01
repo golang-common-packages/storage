@@ -30,8 +30,8 @@ var (
 	mongoClientSessionMapping = make(map[string]*MongoClient)
 )
 
-// NewMongoDB init new instance
-func NewMongoDB(config *MongoDB) INoSQLDocument {
+// newMongoDB init new instance
+func newMongoDB(config *MongoDB) INoSQLDocument {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {

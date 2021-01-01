@@ -10,12 +10,12 @@ const (
 	SQLLike = iota
 )
 
-// NewSQLRelational factory pattern
-func NewSQLRelational(databaseCompany int, config *Config) interface{} {
+// newSQLRelational factory pattern
+func newSQLRelational(databaseCompany int, config *Config) interface{} {
 
 	switch databaseCompany {
 	case SQLLike:
-		return NewSQLLike(&config.LIKE)
+		return newSQLLike(&config.LIKE)
 	}
 
 	return nil

@@ -23,8 +23,8 @@ var (
 	bigCacheClientSessionMapping = make(map[string]*BigCacheClient)
 )
 
-// NewBigCache init new instance
-func NewBigCache(config *bigcache.Config) INoSQLKeyValue {
+// newBigCache init new instance
+func newBigCache(config *bigcache.Config) INoSQLKeyValue {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {

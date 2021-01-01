@@ -23,8 +23,8 @@ var (
 	redisClientSessionMapping = make(map[string]*RedisClient)
 )
 
-// NewRedis init new instance
-func NewRedis(config *Redis) INoSQLKeyValue {
+// newRedis init new instance
+func newRedis(config *Redis) INoSQLKeyValue {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {

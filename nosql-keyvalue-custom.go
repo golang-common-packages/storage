@@ -24,8 +24,8 @@ var (
 	keyValueCustomClientSessionMapping = make(map[string]*KeyValueCustomClient)
 )
 
-// NewKeyValueCustom init new instance
-func NewKeyValueCustom(config *CustomKeyValue) INoSQLKeyValue {
+// newKeyValueCustom init new instance
+func newKeyValueCustom(config *CustomKeyValue) INoSQLKeyValue {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {

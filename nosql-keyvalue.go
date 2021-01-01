@@ -29,15 +29,16 @@ const (
 	REDIS
 )
 
-// NewNoSQLKeyValue factory pattern
-func NewNoSQLKeyValue(databaseCompany int, config *Config) interface{} {
+// newNoSQLKeyValue factory pattern
+func newNoSQLKeyValue(databaseCompany int, config *Config) interface{} {
+
 	switch databaseCompany {
 	case CUSTOM:
-		return NewKeyValueCustom(&config.CustomKeyValue)
+		return newKeyValueCustom(&config.CustomKeyValue)
 	case REDIS:
-		return NewRedis(&config.Redis)
+		return newRedis(&config.Redis)
 	case BIGCACHE:
-		return NewBigCache(&config.BigCache)
+		return newBigCache(&config.BigCache)
 	}
 
 	return nil

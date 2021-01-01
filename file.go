@@ -20,16 +20,16 @@ const (
 	CUSTOMFILE
 )
 
-// NewFile Factory Pattern
-func NewFile(
+// newFile Factory Pattern
+func newFile(
 	databaseCompany int,
 	config *Config) interface{} {
 
 	switch databaseCompany {
 	case DRIVE:
-		return NewDrive(&config.GoogleDrive)
+		return newDrive(&config.GoogleDrive)
 	case CUSTOMFILE:
-		return NewCustomFile(&config.CustomFile)
+		return newCustomFile(&config.CustomFile)
 	}
 
 	return nil

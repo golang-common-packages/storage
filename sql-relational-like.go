@@ -21,9 +21,9 @@ var (
 	sqlLikeClientSessionMapping = make(map[string]*SQLLikeClient)
 )
 
-// NewSQLLike init new instance
+// newSQLLike init new instance
 // The sql package must be used in conjunction with a database driver. See https://golang.org/s/sqldrivers for a list of driverNames.
-func NewSQLLike(config *LIKE) *SQLLikeClient {
+func newSQLLike(config *LIKE) *SQLLikeClient {
 	hasher := &hash.Client{}
 	configAsJSON, err := json.Marshal(config)
 	if err != nil {

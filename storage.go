@@ -14,20 +14,23 @@ const (
 )
 
 var (
+	// Init context with default value
 	ctx = context.Background()
 )
 
 // New database by abstract factory pattern
-func New(databaseType int) func(databaseCompany int, config *Config) interface{} {
+func New(context context.Context, databaseType int) func(databaseCompany int, config *Config) interface{} {
+	SetContext(context)
+
 	switch databaseType {
 	case SQLRELATIONAL:
-		return NewSQLRelational
+		return newSQLRelational
 	case NOSQLDOCUMENT:
-		return NewNoSQLDocument
+		return newNoSQLDocument
 	case NOSQLKEYVALUE:
-		return NewNoSQLKeyValue
+		return newNoSQLKeyValue
 	case FILE:
-		return NewFile
+		return newFile
 	default:
 		return nil
 	}

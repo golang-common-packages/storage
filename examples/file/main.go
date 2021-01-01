@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,8 +11,10 @@ import (
 )
 
 func main() {
+	ctx := context.Background()
+
 	// Init file services
-	fileService := storage.New(storage.FILE)(storage.DRIVE, &storage.Config{GoogleDrive: storage.GoogleDrive{
+	fileService := storage.New(ctx, storage.FILE)(storage.DRIVE, &storage.Config{GoogleDrive: storage.GoogleDrive{
 		PoolSize:     4,
 		ByHTTPClient: false,
 		Credential:   "credentials.json",
@@ -22,13 +25,13 @@ func main() {
 	fmt.Println("List:")
 	fileListResult, err := fileService.List(100)
 	if err != nil {
-		log.Fatalln("Unable to retrieve files: %v", err)
+		log.Fatalln("Unable to retrieve files: ", err)
 	}
 
 	fileListJSON, _ := json.Marshal(fileListResult)
 	var fileList storage.GoogleFileListModel
 	if err := json.Unmarshal(fileListJSON, &fileList); err != nil {
-		log.Fatalln("Unable to unmarshal: %v", err)
+		log.Fatalln("Unable to unmarshal: ", err)
 	}
 
 	fmt.Println("NextPageToken:")
@@ -46,20 +49,20 @@ func main() {
 	fmt.Println("Delete:")
 	fileIDs := []string{"1RkH0-SJT0RJWtxNUUZU1iwv-LW7FUTh7", "1YjynEQJGvq_JnAAxC9pvHmGF6nysF8Yi", "1RkH0-SJT0RJWtxNUUZU1iwv-LW7FUTh8"}
 	if err := fileService.Delete(fileIDs); err != nil {
-		log.Fatalln("Can not delete: %v", err)
+		log.Fatalln("Can not delete: ", err)
 	}
 
 	// Create folder
 	fmt.Println("Create:")
 	createFolderResult, err := fileService.CreateFolder("golangDemo2")
 	if err != nil {
-		log.Fatalln("Can not create folder: %v", err)
+		log.Fatalln("Can not create folder: ", err)
 	}
 
 	createFolderResultJSON, _ := json.Marshal(createFolderResult)
 	var folderCreated storage.GoogleFileModel
 	if err := json.Unmarshal(createFolderResultJSON, &folderCreated); err != nil {
-		log.Fatalln("Unable to unmarshal: %v", err)
+		log.Fatalln("Unable to unmarshal: ", err)
 	}
 
 	fmt.Println(folderCreated.Id)
@@ -68,7 +71,7 @@ func main() {
 	fmt.Println("Move:")
 	moveResult, err := fileService.Move("1iWusgOJ7yi0Jmx6O4D8L1HK_lw9SXMk4", "1a0MqYDGQ6RQDE_gxz-72-imRgCDyywUn", "1aSwrAe04wy_Bp6eyPRlCLu2_R_m7aF9h")
 	if err != nil {
-		log.Fatalln("Can not move file: %v", err)
+		log.Fatalln("Can not move file: ", err)
 	}
 
 	fmt.Println(moveResult)
@@ -77,18 +80,18 @@ func main() {
 	fmt.Println("Upload:")
 	f, err := os.Open("./test.txt")
 	if err != nil {
-		log.Fatalln("%v", err)
+		log.Fatalln("Can not open: ", err)
 	}
 
 	uploadResult, err := fileService.Upload("test.txt", f)
 	if err != nil {
-		log.Fatalln("Can not upload: %v", err)
+		log.Fatalln("Can not upload: ", err)
 	}
 
 	uploadResultJSON, _ := json.Marshal(uploadResult)
 	var fileUpload storage.GoogleFileModel
 	if err := json.Unmarshal(uploadResultJSON, &fileUpload); err != nil {
-		log.Fatalln("Unable to unmarshal: %v", err)
+		log.Fatalln("Unable to unmarshal: ", err)
 	}
 
 	fmt.Println(fileUpload.Id)

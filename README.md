@@ -29,4 +29,4 @@ driveConn := storage.New(storage.FILE)(storage.DRIVE, &storage.Config{GoogleDriv
 ```
 
 ## Note
-[Check this template for more information and how to use this package](https://github.com/golang-common-packages/template)
+[How to use this package?](https://github.com/golang-common-packages/template)
