@@ -32,9 +32,6 @@ coverage:
 	$(GOTEST) -coverprofile=coverage.out ./...
 	$(GOCMD) tool cover -html=coverage.out
 
-lint:
-	golangci-lint run
-
 tidy:
 	$(GOMOD) tidy
 
