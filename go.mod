@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	cloud.google.com/go v0.83.0 // indirect
+	github.com/alicebob/miniredis/v2 v2.34.0
 	github.com/allegro/bigcache/v2 v2.2.5
 	github.com/aws/aws-sdk-go v1.38.55 // indirect
 	github.com/gammazero/workerpool v1.1.2
@@ -20,7 +21,7 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/ginkgo v1.14.1 // indirect
 	github.com/onsi/gomega v1.10.2 // indirect
-	github.com/stretchr/testify v1.6.1
+	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/pretty v1.0.2 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.mongodb.org/mongo-driver v1.5.3
