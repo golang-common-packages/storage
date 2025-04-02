@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang-common-packages/storage"
 	"github.com/stretchr/testify/assert"
+	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
 
 // TestSQLLikeOperations kiểm tra các thao tác cơ bản với SQL-Like
