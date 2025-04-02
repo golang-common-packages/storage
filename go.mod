@@ -11,7 +11,6 @@ require (
 	github.com/golang-common-packages/linear v0.0.0-20210606050200-ff744a51bf3d
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/labstack/echo/v4 v4.3.0
-	github.com/mattn/go-sqlite3 v1.14.26
 	github.com/stretchr/testify v1.10.0
 	go.mongodb.org/mongo-driver v1.5.3
 	golang.org/x/oauth2 v0.0.0-20210514164344-f6687ab2804c
