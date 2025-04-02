@@ -67,140 +67,192 @@ func newMongoDB(config *MongoDB) INoSQLDocument {
 	return currentMongoSession
 }
 
-// getConnectionURL return mongo connection URI
-func getConnectionURI(config *MongoDB) (URI string) {
-	host := strings.Join(config.Hosts, ",")
-	opt := strings.Join(config.Options, "?")
-	if config.User == "" && config.Password == "" {
-		return fmt.Sprintf("%v?%v", host, opt)
+// getConnectionURI returns mongo connection URI
+// It properly formats the connection string based on authentication requirements
+func getConnectionURI(config *MongoDB) string {
+	if config == nil {
+		log.Println("Warning: MongoDB config is nil")
+		return ""
 	}
-	URI = fmt.Sprintf("mongodb+srv://%v:%v@%v/%v", config.User, config.Password, host, opt)
-
-	return URI
+	
+	host := strings.Join(config.Hosts, ",")
+	opt := strings.Join(config.Options, "&")
+	
+	// Handle connection without authentication
+	if config.User == "" && config.Password == "" {
+		if opt != "" {
+			return fmt.Sprintf("mongodb://%v?%v", host, opt)
+		}
+		return fmt.Sprintf("mongodb://%v", host)
+	}
+	
+	// Connection with authentication
+	if opt != "" {
+		return fmt.Sprintf("mongodb+srv://%v:%v@%v/%v?%v", 
+			config.User, 
+			config.Password, 
+			host, 
+			config.DB, 
+			opt)
+	}
+	
+	return fmt.Sprintf("mongodb+srv://%v:%v@%v/%v", 
+		config.User, 
+		config.Password, 
+		host, 
+		config.DB)
 }
 
-// createSession return a new mongo session & transaction
-func (m *MongoClient) createSession() (session mongo.Session) {
+// createSession returns a new mongo session & transaction
+// It handles session creation and transaction initialization
+func (m *MongoClient) createSession() (mongo.Session, error) {
+	if m.Client == nil {
+		return nil, fmt.Errorf("MongoDB client is not initialized")
+	}
+	
 	session, err := m.Client.StartSession()
 	if err != nil {
-		log.Fatalln("Unable to init new session: ", err)
+		log.Printf("Unable to init new MongoDB session: %v", err)
+		return nil, err
 	}
 
 	if err := session.StartTransaction(); err != nil {
-		log.Fatalln("Unable to start transaction: ", err)
+		log.Printf("Unable to start MongoDB transaction: %v", err)
+		session.EndSession(ctx)
+		return nil, err
 	}
 
-	return session
+	return session, nil
 }
 
-// Create the list of document on collection
+// Create inserts a list of documents into the specified collection
 func (m *MongoClient) Create(databaseName, collectionName string, documents []interface{}) (interface{}, error) {
+	if len(documents) == 0 {
+		return nil, fmt.Errorf("no documents to insert")
+	}
 
 	var result interface{}
-	session := m.createSession()
+	session, err := m.createSession()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MongoDB session: %w", err)
+	}
 	defer session.EndSession(ctx)
 
-	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-
+	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
 		collection := m.Client.Database(databaseName).Collection(collectionName)
 		result, err = collection.InsertMany(ctx, documents)
 		if err != nil {
-			log.Println("Unable to create document: ", err)
+			log.Printf("Unable to create documents in %s.%s: %v", databaseName, collectionName, err)
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		log.Println("Unable to execute mongo session: ", err)
+		log.Printf("Unable to execute mongo session for Create: %v", err)
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// Read documents from collection based on filter
+// Read retrieves documents from the specified collection based on filter
 func (m *MongoClient) Read(databaseName, collectionName string, filter interface{}, limit int64, dataModel reflect.Type) (interface{}, error) {
+	if dataModel == nil {
+		return nil, fmt.Errorf("data model cannot be nil")
+	}
 
 	var results interface{}
-	session := m.createSession()
+	session, err := m.createSession()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MongoDB session: %w", err)
+	}
 	defer session.EndSession(ctx)
 
-	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-
+	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
 		findOptions := options.Find()
 		findOptions.SetLimit(limit)
 		findOptions.SetSort(bson.D{primitive.E{Key: "_id", Value: 1}})
 
 		collection := m.Client.Database(databaseName).Collection(collectionName)
 		cur, err := collection.Find(ctx, filter, findOptions)
-		defer cur.Close(ctx)
 		if err != nil {
-			log.Println("Unable to read document: ", err)
+			log.Printf("Unable to read documents from %s.%s: %v", databaseName, collectionName, err)
 			return err
 		}
+		defer cur.Close(ctx)
 
 		// Decode cursor
-		dataModel := reflect.Zero(reflect.SliceOf(dataModel)).Type()
-		results = reflect.New(dataModel).Interface()
+		sliceType := reflect.Zero(reflect.SliceOf(dataModel)).Type()
+		results = reflect.New(sliceType).Interface()
 		err = cur.All(ctx, results)
 		if err != nil {
-			log.Println("Unable to decode cursor: ", err)
+			log.Printf("Unable to decode cursor: %v", err)
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		log.Println("Unable to execute mongo session: ", err)
+		log.Printf("Unable to execute mongo session for Read: %v", err)
 		return nil, err
 	}
 
 	return results, nil
 }
 
-// Update document with new value based on filter condition
+// Update modifies documents in the specified collection based on filter
 func (m *MongoClient) Update(databaseName, collectionName string, filter, update interface{}) (interface{}, error) {
+	if filter == nil || update == nil {
+		return nil, fmt.Errorf("filter and update cannot be nil")
+	}
 
 	var result interface{}
-	session := m.createSession()
+	session, err := m.createSession()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MongoDB session: %w", err)
+	}
 	defer session.EndSession(ctx)
 
-	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-
+	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
 		collection := m.Client.Database(databaseName).Collection(collectionName)
 		result, err = collection.UpdateMany(ctx, filter, update)
 		if err != nil {
-			log.Println("Unable to update: ", err)
+			log.Printf("Unable to update documents in %s.%s: %v", databaseName, collectionName, err)
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		log.Println("Unable to execute mongo session: ", err)
+		log.Printf("Unable to execute mongo session for Update: %v", err)
 		return nil, err
 	}
 
 	return result, nil
 }
 
-// Delete document based on filter condition
+// Delete removes documents from the specified collection based on filter
 func (m *MongoClient) Delete(databaseName, collectionName string, filter interface{}) (interface{}, error) {
+	if filter == nil {
+		return nil, fmt.Errorf("filter cannot be nil")
+	}
 
 	var result interface{}
-	session := m.createSession()
+	session, err := m.createSession()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MongoDB session: %w", err)
+	}
 	defer session.EndSession(ctx)
 
-	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) (err error) {
-
+	if err := mongo.WithSession(ctx, session, func(sc mongo.SessionContext) error {
 		collection := m.Client.Database(databaseName).Collection(collectionName)
 		result, err = collection.DeleteMany(ctx, filter)
 		if err != nil {
-			log.Println("Unable to delete: ", err)
+			log.Printf("Unable to delete documents from %s.%s: %v", databaseName, collectionName, err)
 			return err
 		}
 
 		return nil
 	}); err != nil {
-		log.Println("Unable to execute mongo session: ", err)
+		log.Printf("Unable to execute mongo session for Delete: %v", err)
 		return nil, err
 	}
 

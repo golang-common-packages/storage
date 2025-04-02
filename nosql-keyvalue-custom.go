@@ -88,47 +88,78 @@ func (cl *KeyValueCustomClient) Middleware(hash hash.IHash) echo.MiddlewareFunc 
 	}
 }
 
-// Get return value based on the key provided
+// Get retrieves a value from the cache based on the key provided
+// Returns nil, nil if the key exists but the value is expired
 func (cl *KeyValueCustomClient) Get(key string) (interface{}, error) {
+	if cl.client == nil {
+		return nil, errors.New("client is not initialized")
+	}
+	
 	if key == "" {
-		return nil, errors.New("Key cannot be empty")
+		return nil, errors.New("key cannot be empty")
 	}
 
 	obj, err := cl.client.Read(key)
 	if err != nil {
 		return nil, err
 	}
+	
+	if obj == nil {
+		return nil, errors.New("key not found: " + key)
+	}
 
 	item, ok := obj.(customKeyValueItem)
 	if !ok {
-		return nil, errors.New("Unable to map object to customKeyValueItem model")
+		log.Printf("Warning: Unable to map object to customKeyValueItem model for key: %s", key)
+		return nil, errors.New("invalid cache item format")
 	}
 
+	// Check if item is expired
 	if item.expires < time.Now().UnixNano() {
+		// Automatically remove expired items
+		cl.client.Get(key)
 		return nil, nil
 	}
 
 	return item.data, nil
 }
 
-// GetMany return value based on the list of keys provided
+// GetMany returns values based on the list of keys provided
+// Returns a map of found items, a slice of keys not found, and any error encountered
 func (cl *KeyValueCustomClient) GetMany(keys []string) (map[string]interface{}, []string, error) {
 	if len(keys) == 0 {
-		return nil, nil, errors.New("Keys cannot be empty")
+		return nil, nil, errors.New("keys cannot be empty")
 	}
 
-	var itemFound map[string]interface{}
+	if cl.client == nil {
+		return nil, nil, errors.New("client is not initialized")
+	}
+
+	itemFound := make(map[string]interface{})
 	var itemNotFound []string
 
 	for _, key := range keys {
+		if key == "" {
+			continue // Skip empty keys
+		}
+		
 		obj, err := cl.client.Read(key)
-		if obj == nil && err == nil {
+		if obj == nil || err != nil {
 			itemNotFound = append(itemNotFound, key)
+			continue
 		}
 
 		item, ok := obj.(customKeyValueItem)
 		if !ok {
-			return nil, nil, errors.New("Unable to map object to customKeyValueItem model")
+			log.Printf("Warning: Unable to map object to customKeyValueItem model for key: %s", key)
+			itemNotFound = append(itemNotFound, key)
+			continue
+		}
+
+		// Check if item is expired
+		if item.expires < time.Now().UnixNano() {
+			itemNotFound = append(itemNotFound, key)
+			continue
 		}
 
 		itemFound[key] = item.data
@@ -137,95 +168,170 @@ func (cl *KeyValueCustomClient) GetMany(keys []string) (map[string]interface{}, 
 	return itemFound, itemNotFound, nil
 }
 
-// Set new record set key and value
+// Set creates a new record with the specified key, value, and expiration
 func (cl *KeyValueCustomClient) Set(key string, value interface{}, expire time.Duration) error {
-	if key == "" || value == nil {
-		return errors.New("Key and value cannot be left blank")
+	if cl.client == nil {
+		return errors.New("client is not initialized")
+	}
+	
+	if key == "" {
+		return errors.New("key cannot be empty")
+	}
+	
+	if value == nil {
+		return errors.New("value cannot be nil")
 	}
 
-	if expire == 0 {
+	// Set default expiration if not provided
+	if expire <= 0 {
 		expire = 24 * time.Hour
 	}
 
-	if err := cl.client.Push(key, customKeyValueItem{
+	expirationTime := time.Now().Add(expire).UnixNano()
+	
+	item := customKeyValueItem{
 		data:    value,
-		expires: time.Now().Add(expire).UnixNano(),
-	}); err != nil {
-		log.Println("Unable to push data: ", err)
+		expires: expirationTime,
+	}
+	
+	if err := cl.client.Push(key, item); err != nil {
+		log.Printf("Unable to push data for key %s: %v", key, err)
 		return err
 	}
 
 	return nil
 }
 
-// Update new value over the key provided
+// Update modifies an existing key with a new value and expiration
+// Returns an error if the key doesn't exist
 func (cl *KeyValueCustomClient) Update(key string, value interface{}, expire time.Duration) error {
-	if key == "" || value == nil {
-		return errors.New("Key and value cannot be left blank")
+	if cl.client == nil {
+		return errors.New("client is not initialized")
+	}
+	
+	if key == "" {
+		return errors.New("key cannot be empty")
+	}
+	
+	if value == nil {
+		return errors.New("value cannot be nil")
 	}
 
+	// Check if key exists
 	_, err := cl.client.Get(key)
 	if err != nil {
-		return err
+		log.Printf("Key %s not found for update: %v", key, err)
+		return errors.New("key not found: " + key)
 	}
 
-	if expire == 0 {
+	// Set default expiration if not provided
+	if expire <= 0 {
 		expire = 24 * time.Hour
 	}
 
-	if err := cl.client.Push(key, customKeyValueItem{
+	expirationTime := time.Now().Add(expire).UnixNano()
+	
+	item := customKeyValueItem{
 		data:    value,
-		expires: time.Now().Add(expire).UnixNano(),
-	}); err != nil {
-		log.Println("Unable to push data: ", err)
+		expires: expirationTime,
+	}
+	
+	if err := cl.client.Push(key, item); err != nil {
+		log.Printf("Unable to update data for key %s: %v", key, err)
 		return err
 	}
 
 	return nil
 }
 
-// Delete deletes the key and its value from the memory
+// Delete removes a key from the cache
+// Returns an error if the key doesn't exist
 func (cl *KeyValueCustomClient) Delete(key string) error {
+	if cl.client == nil {
+		return errors.New("client is not initialized")
+	}
+	
 	if key == "" {
-		return errors.New("Key cannot be empty")
+		return errors.New("key cannot be empty")
 	}
 
-	if _, err := cl.client.Get(key); err != nil {
-		log.Println("Unable to get value: ", err)
-		return err
+	// The Get method in linear.Linear removes the item if found
+	_, err := cl.client.Get(key)
+	if err != nil {
+		log.Printf("Key %s not found for deletion: %v", key, err)
+		return errors.New("key not found: " + key)
 	}
 
 	return nil
 }
 
-// Range over linear data structure
+// Range iterates over all non-expired items in the cache
+// The provided function is called for each key-value pair
 func (cl *KeyValueCustomClient) Range(f func(key, value interface{}) bool) {
-	fn := func(key, value interface{}) bool {
-		item := value.(customKeyValueItem)
+	if cl.client == nil || f == nil {
+		return
+	}
 
-		if item.expires > 0 && item.expires < time.Now().UnixNano() {
+	fn := func(key, value interface{}) bool {
+		// Skip if value is nil
+		if value == nil {
+			return true
+		}
+		
+		// Try to convert to customKeyValueItem
+		item, ok := value.(customKeyValueItem)
+		if !ok {
+			log.Printf("Warning: Unable to map object to customKeyValueItem model for key: %v", key)
 			return true
 		}
 
+		// Skip expired items
+		if item.expires > 0 && item.expires < time.Now().UnixNano() {
+			// Optionally remove expired items during iteration
+			if k, ok := key.(string); ok {
+				cl.client.Get(k)
+			}
+			return true
+		}
+
+		// Call the user-provided function with the actual data
 		return f(key, item.data)
 	}
 
 	cl.client.Range(fn)
 }
 
-// GetNumberOfRecords return number of records
+// GetNumberOfRecords returns the total number of records in the cache
+// Note: This includes expired records that haven't been cleaned up yet
 func (cl *KeyValueCustomClient) GetNumberOfRecords() int {
+	if cl.client == nil {
+		return 0
+	}
 	return cl.client.GetNumberOfKeys()
 }
 
-// GetCapacity method return redis database size
+// GetCapacity returns the current size of the cache in bytes
 func (cl *KeyValueCustomClient) GetCapacity() (interface{}, error) {
+	if cl.client == nil {
+		return 0, errors.New("client is not initialized")
+	}
 	return cl.client.GetLinearCurrentSize(), nil
 }
 
-// Close the service and frees up resources.
+// Close stops the background cleaning process and frees up resources
 func (cl *KeyValueCustomClient) Close() error {
-	cl.close <- struct{}{}
+	if cl.client == nil {
+		return errors.New("client is not initialized")
+	}
+	
+	// Signal the cleaning goroutine to stop
+	select {
+	case cl.close <- struct{}{}:
+		// Successfully sent close signal
+	default:
+		// Channel is already closed or full
+		return errors.New("close channel is unavailable")
+	}
 
 	return nil
 }

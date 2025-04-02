@@ -83,7 +83,13 @@ func (cf *CustomFileClient) Upload(name string, fileContent io.Reader, parents .
 		defer file.Close()
 
 		// Write content to file.
-		_, err = file.Write(streamToByte(fileContent))
+		data, err := streamToByte(fileContent)
+		if err != nil {
+			log.Println("Unable to read file content: ", err)
+			return nil, err
+		}
+		
+		_, err = file.Write(data)
 		if err != nil {
 			log.Println("Unable to write to file: ", err)
 			return nil, err

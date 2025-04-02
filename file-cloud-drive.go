@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -141,7 +142,7 @@ func saveToken(path string, token *oauth2.Token) {
 
 // List all files based on pageSize
 func (dr *DriveServices) List(pageSize int64, pageToken ...string) (interface{}, error) {
-	var fields googleapi.Field = "nextPageToken, files(id, name, fileExtension, mimeType, parents)"
+	fields := googleapi.Field("nextPageToken, files(id, name, fileExtension, mimeType, parents)")
 
 	if len(pageToken) == 0 {
 		return dr.driveService.Files.List().PageSize(pageSize).Fields(fields).Do()
@@ -168,12 +169,26 @@ func (dr *DriveServices) CreateFolder(name string, parents ...string) (interface
 
 // Upload file to drive
 func (dr *DriveServices) Upload(name string, fileContent io.Reader, parents ...string) (interface{}, error) {
+	if name == "" {
+		return nil, errors.New("file name cannot be empty")
+	}
+	
+	if fileContent == nil {
+		return nil, errors.New("file content cannot be nil")
+	}
+	
 	f := &drive.File{
-		Name:    name, //should specify a file extension in the name, like Name: "cat.jpg"
+		Name:    name, // should specify a file extension in the name, like Name: "cat.jpg"
 		Parents: parents,
 	}
 
-	return dr.driveService.Files.Create(f).Media(fileContent).Do()
+	result, err := dr.driveService.Files.Create(f).Media(fileContent).Do()
+	if err != nil {
+		log.Printf("Failed to upload file %s: %v", name, err)
+		return nil, err
+	}
+	
+	return result, nil
 }
 
 // Download file based on fileID

@@ -88,44 +88,103 @@ func (r *RedisClient) Middleware(hash hash.IHash) echo.MiddlewareFunc {
 	}
 }
 
-// Get return value based on the key provided
+// Get retrieves a value from Redis based on the key provided
 func (r *RedisClient) Get(key string) (interface{}, error) {
-	return r.Client.Get(key).Result()
+	if r.Client == nil {
+		return nil, errors.New("redis client is not initialized")
+	}
+	
+	if key == "" {
+		return nil, errors.New("key cannot be empty")
+	}
+	
+	result, err := r.Client.Get(key).Result()
+	if err == redis.Nil {
+		return "", nil // Key does not exist
+	}
+	return result, err
 }
 
-// Set new record set key and value
+// Set creates a new record with the specified key, value, and expiration
 func (r *RedisClient) Set(key string, value interface{}, expire time.Duration) error {
+	if r.Client == nil {
+		return errors.New("redis client is not initialized")
+	}
+	
+	if key == "" {
+		return errors.New("key cannot be empty")
+	}
+	
 	return r.Client.Set(key, value, expire).Err()
 }
 
-// Update new value over the key provided
+// Update modifies an existing key with a new value and expiration
+// Returns an error if the key doesn't exist
 func (r *RedisClient) Update(key string, value interface{}, expire time.Duration) error {
-	_, err := r.Client.Get(key).Result()
+	if r.Client == nil {
+		return errors.New("redis client is not initialized")
+	}
+	
+	if key == "" {
+		return errors.New("key cannot be empty")
+	}
+	
+	// Check if key exists
+	exists, err := r.Client.Exists(key).Result()
 	if err != nil {
-		log.Println("Unable to get value: ", err)
+		log.Printf("Unable to check if key exists: %v", err)
 		return err
 	}
+	
+	if exists == 0 {
+		return errors.New("key does not exist: " + key)
+	}
 
 	return r.Client.Set(key, value, expire).Err()
 }
 
-// Append new value over the key provided
+// Append adds a string value to the end of an existing string key
 func (r *RedisClient) Append(key string, value interface{}) error {
-	b, err := json.Marshal(value)
-	if err != nil {
-		log.Println("Unable to marshal value: ", err)
-		return errors.New("can not marshal value")
+	if r.Client == nil {
+		return errors.New("redis client is not initialized")
+	}
+	
+	if key == "" {
+		return errors.New("key cannot be empty")
+	}
+	
+	// Convert value to string
+	var stringValue string
+	switch v := value.(type) {
+	case string:
+		stringValue = v
+	case []byte:
+		stringValue = string(v)
+	default:
+		b, err := json.Marshal(value)
+		if err != nil {
+			log.Printf("Unable to marshal value: %v", err)
+			return errors.New("cannot marshal value: " + err.Error())
+		}
+		stringValue = string(b)
 	}
 
-	var v string
-	json.Unmarshal(b, &v)
-
-	return r.Client.Append(key, v).Err()
+	_, err := r.Client.Append(key, stringValue).Result()
+	return err
 }
 
-// Delete method delete value based on the key provided
+// Delete removes a key from Redis
 func (r *RedisClient) Delete(key string) error {
-	return r.Client.Del(key).Err()
+	if r.Client == nil {
+		return errors.New("redis client is not initialized")
+	}
+	
+	if key == "" {
+		return errors.New("key cannot be empty")
+	}
+	
+	_, err := r.Client.Del(key).Result()
+	return err
 }
 
 // GetNumberOfRecords return number of records
